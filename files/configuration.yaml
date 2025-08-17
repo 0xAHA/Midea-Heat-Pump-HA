@@ -20,7 +20,8 @@ climate:
       - service: "{{ 'switch.turn_on' if hvac_mode == 'heat' else 'switch.turn_off' }}"
         target:
           entity_id: switch.water_heatpump_on_off_toggle
-    min_temp: 45
+    # min and max based off the user manual
+    min_temp: 55
     max_temp: 70
     temp_step: 1
     precision: 1
