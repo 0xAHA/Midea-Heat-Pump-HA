@@ -113,7 +113,7 @@ WAN Settings:
 
 ### Phase 2: Modbus Configuration
 - **Place** the provided `modbus.yaml` in your HA config folder
-- Update the host value in `modbus.yaml` to the IP address you have set for the EW-11A (or determine the DHCP address it has)
+- Update the **host** value in `modbus.yaml` to the IP address you have set for the EW-11A (or determine the DHCP address it has)
 - This replaces basic climate entities with proper target temperature sensors
 
 ### Phase 3: Climate Template
