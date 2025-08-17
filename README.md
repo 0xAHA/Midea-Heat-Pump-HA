@@ -37,7 +37,7 @@ We're upgrading from basic Modbus sensors to a proper climate entity by:
 > **⚠️ Safety First**: Have a licensed electrician handle the 240VAC connections!
 
 ### Step 1: Power Supply Installation
-- Install appropriate PSU using available spade terminals inside the main HWS cover
+- Install appropriate PSU using available spade terminals inside the main HWS cover (circled in green in images below)
 - Follow local electrical regulations
 
 ### Step 2: EW-11A Connections
@@ -53,7 +53,7 @@ Pin 4: Black  → GND from DC supply + Yellow GND from heater
 <img width="772" height="214" alt="EW11-A connector pinout diagram" src="https://github.com/user-attachments/assets/92e0001d-2b15-4da6-9f66-24c7b342c4d9" />
 
 ### Step 3: RS485 Wiring
-- Locate the service connector outside the main panel (circled in green in images below)
+- Locate the service connector outside the main panel (circled in red in images below)
 - Connect RS485 wires to the EW-11A 4-pin connector
 - *Tip*: You can either remove pins for direct termination or use jumpers
 
