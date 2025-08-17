@@ -71,6 +71,7 @@ Pin 4: Black  → GND from DC supply + Yellow GND from heater
 3. **Login** with username: `admin`, password: `admin`
 
 ### Serial Port Settings
+Only the following should need changing:
 ```
 Baud Rate: 9600
 Flow Control: Disable
@@ -78,6 +79,7 @@ Protocol: RS485
 ```
 
 ### Communications Settings
+Only the following should need changing:
 ```
 Socket Settings → Local Port: 502
 ```
@@ -92,9 +94,9 @@ Socket Settings → Local Port: 502
 ```
 WAN Settings:
 ├── DHCP: Disabled
-├── WAN IP: 192.168.1.xxx (your choice)
-├── Subnet Mask: 255.255.255.0
-├── Gateway: 192.168.1.1 (your router)
+├── WAN IP: <IP address of your choice>
+├── Subnet Mask: <as per your network>
+├── Gateway: <your router's IP>
 └── DNS: 8.8.8.8 or your preference
 ```
 
@@ -106,8 +108,8 @@ WAN Settings:
 
 ### Phase 1: Install Template Climate
 1. **HACS** → **Integrations** → **⋮** → **Custom repositories**
-2. **Add**: `https://github.com/jcwillox/hass-template-climate`
-3. **Download** and **restart** Home Assistant
+2. **Add**: `[https://github.com/jcwillox/hass-template-climate](https://github.com/jcwillox/hass-template-climate.git)`
+3. Find the repo in HACS and **Download**, then **restart** Home Assistant
 
 ### Phase 2: Modbus Configuration
 - **Place** the provided `modbus.yaml` in your HA config folder
