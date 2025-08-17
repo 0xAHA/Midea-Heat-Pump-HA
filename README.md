@@ -1,1 +1,145 @@
-# Midea-Heat-Pump-HA
+# 🔥 Midea Heat Pump ↔️ Home Assistant Integration
+
+*Transform your Chromagen Midea 170L heat pump into a smart, Home Assistant-controlled powerhouse!*
+
+---
+
+## 🎯 What You'll Achieve
+
+This guide walks you through creating a fully functional climate entity in Home Assistant that can:
+- ✅ Control target temperature
+- ✅ Turn the heat pump on/off
+- ✅ Monitor real-time status
+- ✅ Integrate with automations and dashboards
+
+## 🧩 The Solution Overview
+
+We're upgrading from basic Modbus sensors to a proper climate entity by:
+
+1. **Installing** `hass-template-climate` from HACS
+2. **Configuring** Modbus sensors in `modbus.yaml` 
+3. **Creating** a climate template in `configuration.yaml`
+
+---
+
+## 🛠️ Hardware Shopping List
+
+| Item | Description | Link |
+|------|-------------|------|
+| **EW-11A RS485 to WiFi** | The magic bridge (EW11A-0 + 4pin connector) | [AliExpress](https://www.aliexpress.com/item/32916128353.html) |
+| **240VAC to DC PSU** | 12V recommended (5-18V supported) | *Your local electronics supplier* |
+| **Jumper wires & terminals** | For neat connections | *Hardware store* |
+
+---
+
+## ⚡ Hardware Installation
+
+> **⚠️ Safety First**: Have a licensed electrician handle the 240VAC connections!
+
+### Step 1: Power Supply Installation
+- Install appropriate PSU using available spade terminals inside the main HWS cover
+- Follow local electrical regulations
+
+### Step 2: EW-11A Connections
+
+**📍 Pin-out Reference** *(left to right when looking down at screws)*:
+```
+Pin 1: Black  → RS485A from heater
+Pin 2: Grey   → RS485B from heater  
+Pin 3: Red    → VCC (5-18V DC)
+Pin 4: Black  → GND from DC supply + Yellow GND from heater
+```
+
+### Step 3: RS485 Wiring
+- Locate the service connector outside the main panel (circled in green in original images)
+- Connect RS485 wires to the EW-11A 4-pin connector
+- *Tip*: You can either remove pins for direct termination or use jumpers
+
+---
+
+## 📡 EW11-A Configuration
+
+### Initial Setup
+1. **Connect** to WiFi network `EWxxxxx` (based on MAC address)
+2. **Browse** to `10.10.100.254`
+3. **Login** with username: `admin`, password: `admin`
+
+### Serial Port Settings
+```
+Baud Rate: 9600
+Flow Control: Disable
+Protocol: RS485
+```
+
+### Communications Settings
+```
+Socket Settings → Local Port: 502
+```
+
+### WiFi Configuration
+1. **System Settings** → Change WiFi mode to `STA`
+2. **Scan** for your network and enter credentials, OR manually enter:
+   - STA SSID: `your_network_name`
+   - STA KEY: `your_wifi_password`
+
+### Optional: Static IP Setup
+```
+WAN Settings:
+├── DHCP: Disabled
+├── WAN IP: 192.168.1.xxx (your choice)
+├── Subnet Mask: 255.255.255.0
+├── Gateway: 192.168.1.1 (your router)
+└── DNS: 8.8.8.8 or your preference
+```
+
+3. **Submit** and **restart** the EW11-A
+
+---
+
+## 🏠 Home Assistant Configuration
+
+### Phase 1: Install Template Climate
+1. **HACS** → **Integrations** → **⋮** → **Custom repositories**
+2. **Add**: `https://github.com/jcwillox/hass-template-climate`
+3. **Download** and **restart** Home Assistant
+
+### Phase 2: Modbus Configuration
+- **Place** the provided `modbus.yaml` in your HA config folder
+- This replaces basic climate entities with proper target temperature sensors
+
+### Phase 3: Climate Template
+- **Add** the climate template configuration to your `configuration.yaml`
+- This creates the final climate entity with full control capabilities
+
+---
+
+## 📁 Required Files
+
+| File | Purpose |
+|------|---------|
+| `modbus.yaml` | Defines Modbus sensors and target temperature control |
+| `configuration.yaml` | Contains the climate template entity |
+
+---
+
+## 🙏 Credits & References
+
+**Special thanks to:**
+- **ill_hey** - Original HA Community post and instructions
+- **BrittonA** - Initial Modbus YAML configuration
+
+**Source threads:**
+- [HA Community Discussion](https://community.home-assistant.io/t/chromagen-midea-170l-heat-pump-hot-water-system-modbus-integration-success/773718/12)
+- [BrittonA's Gist](https://gist.github.com/BrittonA/339d25efb934bdb4f451ba7e2f920ba3)
+
+---
+
+## 🚀 Next Steps
+
+Once configured, your heat pump will appear as a proper climate entity in Home Assistant, ready for:
+- Dashboard cards
+- Automations based on time/temperature
+- Voice control integration
+- Energy monitoring and optimization
+
+*Happy heating! 🔥*
