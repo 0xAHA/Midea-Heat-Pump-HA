@@ -1,0 +1,26 @@
+## Add this to your configuration.yaml
+
+modbus: !include modbus.yaml
+
+climate:
+  - platform: climate_template
+    name: "Water Heat Pump Climate"
+    unique_id: water_heatpump_climate
+    modes: ["heat", "off"]
+    current_temperature_template: "{{ states('sensor.water_heatpump_temperature_bottom_of_tank_T5L') }}"
+    target_temperature_template: "{{ states('sensor.water_heatpump_target_temperature') }}"
+    set_temperature:
+      - service: modbus.write_register
+        data:
+          hub: waveshare1
+          unit: 1
+          address: 2
+          value: "{{ temperature | int }}"
+    set_hvac_mode:
+      - service: "{{ 'switch.turn_on' if hvac_mode == 'heat' else 'switch.turn_off' }}"
+        target:
+          entity_id: switch.water_heatpump_on_off_toggle
+    min_temp: 45
+    max_temp: 70
+    temp_step: 1
+    precision: 1
