@@ -40,7 +40,7 @@ from . import (
 
 _LOGGER = logging.getLogger(__name__)
 
-DEFAULT_NAME = "Generic Water Heater"
+DEFAULT_NAME = "Midea Heatpump HWS"
 
 
 async def async_setup_platform(

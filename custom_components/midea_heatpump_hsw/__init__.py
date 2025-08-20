@@ -10,7 +10,7 @@ import homeassistant.helpers.config_validation as cv
 
 _LOGGER = logging.getLogger(__name__)
 
-DOMAIN = "midea_water_heater"
+DOMAIN = "midea_heatpump_hws"
 
 CONF_HEATER = "heater_switch"
 CONF_SENSOR = "temperature_sensor"
