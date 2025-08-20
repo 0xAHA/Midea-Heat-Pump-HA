@@ -83,7 +83,9 @@ Pin 3: Red    → VCC (5-18V DC)
 Pin 4: Black  → GND from DC supply + Yellow GND from heater
 ```
 
+
 <img width="772" height="214" alt="EW11-A connector pinout diagram" src="https://github.com/user-attachments/assets/92e0001d-2b15-4da6-9f66-24c7b342c4d9" />
+
 ### Step 3: RS485 Wiring
 
 * Locate the service connector outside the main panel (circled in red in images below)
