@@ -1,6 +1,3 @@
 {
   "name": "Midea Heatpump HWS",
-  "domains": ["midea_heatpump_hsw"],
-  "documentation": "https://github.com/0xAHA/ha_midea_water_heater/blob/main/README.md",
-  "version": "0.0.1"
 }
