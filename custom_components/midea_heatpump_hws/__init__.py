@@ -18,7 +18,7 @@ CONF_TARGET_TEMP = "target_temperature"
 CONF_TEMP_DELTA = "delta_temperature"
 CONF_TEMP_MIN = "min_temp"
 CONF_TEMP_MAX = "max_temp"
-CONF_MODE_SWITCH = "mode_switch"    
+CONF_MODE_SENSOR = "mode_sensor"    
 CONF_MODBUS_HUB = "modbus_hub"  
 CONF_MODBUS_UNIT = "modbus_unit" 
 CONF_TARGET_TEMP_REGISTER = "target_temp_register"
@@ -31,14 +31,14 @@ CONFIG_SCHEMA = vol.Schema(
                     {
                         vol.Required(CONF_HEATER): cv.entity_id,
                         vol.Required(CONF_SENSOR): cv.entity_id,
+                        vol.Required(CONF_MODE_SENSOR): cv.entity_id,
                         vol.Optional(CONF_TEMP_DELTA): vol.Coerce(float),
                         vol.Optional(CONF_TARGET_TEMP): vol.Coerce(float),
                         vol.Optional(CONF_TEMP_MIN): vol.Coerce(float),
                         vol.Optional(CONF_TEMP_MAX): vol.Coerce(float),
-                        vol.Optional(CONF_MODE_SWITCH): cv.entity_id,      # Add this
-                        vol.Optional(CONF_MODBUS_HUB): cv.string,          # Add this
-                        vol.Optional(CONF_MODBUS_UNIT, default=1): vol.Coerce(int),  # Add this
-                        vol.Optional(CONF_TARGET_TEMP_REGISTER, default=2): vol.Coerce(int),  # Add this
+                        vol.Optional(CONF_MODBUS_HUB): cv.string,        
+                        vol.Optional(CONF_MODBUS_UNIT, default=1): vol.Coerce(int), 
+                        vol.Optional(CONF_TARGET_TEMP_REGISTER, default=2): vol.Coerce(int),  
                     }
                 )
             }
