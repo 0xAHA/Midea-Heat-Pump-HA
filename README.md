@@ -142,65 +142,21 @@ WAN Settings:
 
 ### Step 1: Modbus Setup
 
-Create or update your `modbus.yaml` file:
-
-```yaml
-- name: waveshare1
-  type: tcp
-  host: 192.168.1.80  # Your EW11-A IP address
-  port: 502
-  delay: 2
-  timeout: 5
-  
-  sensors:
-    # Current temperature sensor
-    - name: water_heatpump_temperature_bottom_of_tank_T5L
-      unit_of_measurement: °C
-      state_class: measurement
-      unique_id: water_heatpump_temperature_bottom_of_tank_T5L
-      scan_interval: 30
-      address: 102
-      slave: 1
-      offset: -15
-      scale: 0.5
-  
-    # Target temperature sensor (reads from register 2)
-    - name: water_heatpump_target_temperature
-      unit_of_measurement: °C
-      state_class: measurement
-      unique_id: water_heatpump_target_temperature
-      scan_interval: 30
-      address: 2
-      slave: 1
-      input_type: holding
-
-  switches:
-    # Main on/off switch
-    - name: water_heatpump_on_off_toggle
-      unique_id: water_heatpump_on_off_toggle
-      address: 123  # Update with your actual register
-      slave: 1
-  
-    # Mode switch (off=eco, on=hybrid)
-    - name: water_heatpump_offeconomy_onhybrid_toggle
-      unique_id: water_heatpump_offeconomy_onhybrid_toggle
-      address: 124  # Update with your actual register
-      slave: 1
-```
+Create or update your `modbus.yaml` file. Use the modbus.yaml in the repository's files folder for reference.
 
 ### Step 2: Water Heater Configuration
 
 Add to your `configuration.yaml`:
 
 ```yaml
-generic_water_heater:
+midea_heatpump_hws:
   water_heatpump:
     heater_switch: switch.water_heatpump_on_off_toggle
-    mode_switch: switch.water_heatpump_offeconomy_onhybrid_toggle
+    mode_sensor: sensor.water_heatpump_mode
     temperature_sensor: sensor.water_heatpump_temperature_bottom_of_tank_T5L
+    min_temp: 60
+    max_temp: 65
     target_temperature: 65
-    min_temp: 40
-    max_temp: 75
     modbus_hub: waveshare1
     modbus_unit: 1
     target_temp_register: 2
@@ -222,6 +178,8 @@ Your water heater entity will be created as `water_heater.water_heatpump`
 | **Performance** | High performance heating | Hybrid mode      |
 
 ---
+
+
 
 ## 🎨 Dashboard Integration
 
@@ -309,8 +267,8 @@ automation:
 | Issue                           | Solution                                    |
 | --------------------------------- | --------------------------------------------- |
 | Entity shows as`unavailable`    | Check modbus connection and sensor entities |
-| Target temperature not changing | Verify modbus hub name and register address |
-| Modes not switching             | Check switch entity names in configuration  |
+| Target temperature not changing | Verify modbus hub name and register addres  |
+|                                 |                                             |
 
 ### Debug Steps
 
