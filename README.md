@@ -52,7 +52,7 @@ This integration creates a fully functional **water heater entity** in Home Assi
 
 ## 🛠️ Hardware Requirements
 
-Follow the hardware installation instructions [here](https://github.com/0xAHA/Midea-Heat-Pump-HA/blob/main/files/modbus.yaml)
+Follow the hardware installation instructions [here](https://github.com/0xAHA/Midea-Heat-Pump-HA/blob/main/README_Hardware.md)
 
 Once completed and tested, you should be ready to integrate to Home Assistant.
 
@@ -233,7 +233,7 @@ automation:
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](https://claude.ai/chat/LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](https://github.com/0xAHA/Midea-Heat-Pump-HA/blob/main/LICENSE) file for details.
 
 ---
 
