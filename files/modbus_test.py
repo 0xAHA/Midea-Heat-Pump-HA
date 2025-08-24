@@ -60,9 +60,17 @@ def format_value(raw_value, register_config):
         if processed in mode_map:
             return mode_map[processed]
         else:
-            return f"Unknown Mode ({processed})"
+            return "Other"
     else:
         return str(processed)
+
+def is_unknown_mode(raw_value, register_config):
+    """Check if this is an unknown operating mode"""
+    if register_config["type"] == "mode":
+        processed = process_value(raw_value, register_config)
+        mode_map = {1: "Eco", 2: "Hybrid", 4: "E-Heater"}
+        return processed not in mode_map
+    return False
 
 def read_water_heater_registers(host, port, slave_id=1):
     """Read all water heater registers and display in a table"""
@@ -90,6 +98,7 @@ def read_water_heater_registers(host, port, slave_id=1):
         
         success_count = 0
         total_count = len(WATER_HEATER_REGISTERS)
+        unknown_modes_found = []
         
         for reg_config in WATER_HEATER_REGISTERS:
             address = reg_config["address"]
@@ -107,6 +116,11 @@ def read_water_heater_registers(host, port, slave_id=1):
                 raw_value = result.registers[0]
                 formatted_value = format_value(raw_value, reg_config)
                 
+                # Check for unknown operating modes
+                if is_unknown_mode(raw_value, reg_config):
+                    processed_value = process_value(raw_value, reg_config)
+                    unknown_modes_found.append(processed_value)
+                
                 # Show raw value in hex if it's useful
                 raw_display = f"{raw_value} (0x{raw_value:04X})"
                 
@@ -119,6 +133,13 @@ def read_water_heater_registers(host, port, slave_id=1):
         
         print("-" * 85)
         print(f"Successfully read {success_count}/{total_count} registers")
+        
+        # Show message about unknown modes if any were found
+        if unknown_modes_found:
+            print(f"\n⚠️  NOTICE: Found undocumented operating mode(s): {', '.join(map(str, unknown_modes_found))}")
+            print("   Please verify the mode on your water heater's display and report it at:")
+            print("   https://github.com/0xAHA/Midea-Heat-Pump-HA/issues")
+            print("   This will help improve the integration for everyone!")
         
         return success_count > 0
             
