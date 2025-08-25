@@ -87,7 +87,7 @@ def test_operating_modes(client):
     
     while True:
         try:
-            user_input = input("\nEnter mode value to test (1-255, 'q' to quit, 'r' to read current): ").strip().lower()
+            user_input = input("\nEnter mode value to test (0-255, 'q' to quit, 'r' to read current): ").strip().lower()
             
             if user_input == 'q':
                 break
@@ -109,8 +109,8 @@ def test_operating_modes(client):
             # Parse the input value
             try:
                 test_value = int(user_input)
-                if not (1 <= test_value <= 255):
-                    print("❌ Value must be between 1 and 255")
+                if not (0 <= test_value <= 255):
+                    print("❌ Value must be between 0 and 255")
                     continue
             except ValueError:
                 print("❌ Please enter a valid number, 'r' to read, or 'q' to quit")
