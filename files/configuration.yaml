@@ -1,15 +1,19 @@
 ## Add this to your configuration.yaml
-
-modbus: !include modbus.yaml
+## There is no need for separate modbus.yaml import.
 
 midea_heatpump_hws:
   water_heatpump:
-    heater_switch: switch.water_heatpump_on_off_toggle
-    mode_sensor: sensor.water_heatpump_mode
-    temperature_sensor: sensor.water_heatpump_temperature_bottom_of_tank_T5L
-    min_temp: 60
-    max_temp: 65
-    target_temperature: 65
-    modbus_hub: waveshare1
+    friendly_name: "Hot Water System"
+    modbus_host: 192.168.1.80
+    modbus_port: 502
     modbus_unit: 1
+    scan_interval: 30
+    temp_register: 102
     target_temp_register: 2
+    mode_register: 1
+    power_register: 0
+    temp_offset: -15
+    temp_scale: 0.5
+    target_temperature: 65
+    min_temp: 60
+    max_temp: 70
