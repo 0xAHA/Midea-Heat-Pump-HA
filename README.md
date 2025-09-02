@@ -3,7 +3,7 @@
 *Transform your Chromagen Midea 170L heat pump into a smart, Home Assistant-controlled water heater entity!*
 
 ![HACS Badge](https://img.shields.io/badge/HACS-Custom-orange.svg)
-![Version](https://img.shields.io/badge/Version-0.1.0-blue.svg)
+![Version](https://img.shields.io/badge/Version-0.1.1-blue.svg)
 [![GitHub Issues](https://img.shields.io/github/issues/0xAHA/Midea-Heat-Pump-HA.svg)](https://github.com/0xAHA/Midea-Heat-Pump-HA/issues)
 
 ---
@@ -35,11 +35,12 @@ This integration creates a fully functional **water heater entity** in Home Assi
 ### Method 1: HACS (Recommended)
 
 1. **Add custom repository**:
+
    - HACS → Integrations → ⋮ → Custom repositories
    - Repository: `https://github.com/0xAHA/Midea-Heat-Pump-HA.git`
    - Category: Integration
-
 2. **Install**:
+
    - Search for "Midea Heatpump HWS"
    - Click Download
    - Restart Home Assistant
@@ -62,23 +63,23 @@ Add to your `configuration.yaml`:
 midea_heatpump_hws:
   water_heatpump:
     friendly_name: "Hot Water System"
-    
+  
     # Modbus connection
     modbus_host: 192.168.1.80  # Your RS485-WiFi Adapter IP address
     modbus_port: 502           # Your RS485-WiFi Adapter Modbus Port
     modbus_unit: 1
     scan_interval: 30
-    
+  
     # Register addresses
     temp_register: 102
     target_temp_register: 2
     mode_register: 1
     power_register: 0
-    
+  
     # Temperature scaling
     temp_offset: -15
     temp_scale: 0.5
-    
+  
     # Temperature settings
     target_temperature: 65
     min_temp: 40
@@ -93,12 +94,13 @@ midea_heatpump_hws:
 
 ## 🎛️ Operation Modes
 
-| Mode | Description | Midea Equivalent | Modbus Value |
-|------|-------------|------------------|--------------|
-| **Off** | Water heater disabled | Off | - |
-| **Eco** | Energy efficient heating | Economy mode | 1 |
-| **Performance** | High performance heating | Hybrid mode | 2 |
-| **Electric** | Electric heating | E-heater mode | 4 |
+
+| Mode            | Description              | Midea Equivalent | Modbus Value |
+| ----------------- | -------------------------- | ------------------ | -------------- |
+| **Off**         | Water heater disabled    | Off              | -            |
+| **Eco**         | Energy efficient heating | Economy mode     | 1            |
+| **Performance** | High performance heating | Hybrid mode      | 2            |
+| **Electric**    | Electric heating         | E-heater mode    | 4            |
 
 ## 🔬🤝 Operation Mode Compatibility
 
@@ -183,15 +185,18 @@ automation:
 
 ### Common Issues
 
-| Issue | Solution |
-|-------|----------|
-| Entity shows as `unavailable` | Check modbus host IP and network connectivity |
-| Target temperature not changing | Verify register addresses and modbus unit ID |
-| Modes not switching | Check mode register values and power register |
-| Connection timeouts | Verify RS485 Adapter is powered and accessible |
+
+| Issue                           | Solution                                       |
+| --------------------------------- | ------------------------------------------------ |
+| Entity shows as`unavailable`    | Check modbus host IP and network connectivity  |
+| Target temperature not changing | Verify register addresses and modbus unit ID   |
+| Modes not switching             | Check mode register values and power register  |
+| Connection timeouts             | Verify RS485 Adapter is powered and accessible |
 
 ### Testing Other HWS Models
+
 If you have a HWS system that doesn't suit these modbus registers, or has additional operating modes, use the python script referenced at the links below to check what's going on with your system and let us know!
+
 * [Script README](https://github.com/0xAHA/Midea-Heat-Pump-HA/blob/main/files/README_Modbus.md)
 * [Modbus Test Script](https://github.com/0xAHA/Midea-Heat-Pump-HA/blob/main/files/modbus_test.py)
 
@@ -222,7 +227,7 @@ If you have a HWS system that doesn't suit these modbus registers, or has additi
 
 ## 📈 Roadmap
 
-- [x] **Built-in Modbus integration** ✅ Completed in v0.1.0
+- [X] **Built-in Modbus integration** ✅ Completed in v0.1.0
 - [ ] **Configuration UI** (no more YAML editing)
 - [ ] **Enhanced diagnostics** (connection status, detailed error reporting)
 - [ ] **Energy monitoring** (power consumption tracking)
