@@ -302,7 +302,9 @@ class MideaWaterHeater(WaterHeaterEntity, RestoreEntity):
                 await self._client.connect()
             
             result = await self._client.write_register(
-                self._target_temp_register, int(temperature), self._modbus_unit
+                    address=self._target_temp_register,
+                    value=int(temperature),
+                    slave=self._modbus_unit
             )
             
             if not result.isError():
@@ -326,15 +328,21 @@ class MideaWaterHeater(WaterHeaterEntity, RestoreEntity):
             if operation_mode == "off":
                 # Turn off power
                 result = await self._client.write_register(
-                    self._power_register, 0, self._modbus_unit
+                    address=self._power_register,
+                    value=0, 
+                    slave=self._modbus_unit
                 )
             elif operation_mode in mode_values:
                 # Set mode first, then turn on power
                 mode_result = await self._client.write_register(
-                    self._mode_register, mode_values[operation_mode], self._modbus_unit
+                    address=self._mode_register,
+                    value=mode_values[operation_mode],
+                    slave=self._modbus_unit
                 )
                 power_result = await self._client.write_register(
-                    self._power_register, 1, self._modbus_unit
+                    address=self._power_register,
+                    value=1, 
+                    slave=self._modbus_unit
                 )
                 result = mode_result  # Check mode write success
             
