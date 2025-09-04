@@ -62,7 +62,7 @@ Pin 4: Black  → GND from DC supply + Yellow GND from heater
 ```
 Baud Rate: 9600
 Flow Control: Disable
-Protocol: RS485
+Protocol: Modbus
 ```
 
 ### Communications Settings
