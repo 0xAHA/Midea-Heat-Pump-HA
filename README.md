@@ -3,7 +3,7 @@
 *Transform your Chromagen Midea 170L heat pump into a smart, Home Assistant-controlled water heater entity!*
 
 ![HACS Badge](https://img.shields.io/badge/HACS-Custom-orange.svg)
-![Version](https://img.shields.io/badge/Version-0.1.1-blue.svg)
+![Version](https://img.shields.io/badge/Version-0.1.2-blue.svg)
 [![GitHub Issues](https://img.shields.io/github/issues/0xAHA/Midea-Heat-Pump-HA.svg)](https://github.com/0xAHA/Midea-Heat-Pump-HA/issues)
 
 ---
