@@ -237,28 +237,28 @@ class MideaWaterHeater(WaterHeaterEntity, RestoreEntity):
             temp_result = await self._client.read_holding_registers(
                 address=self._temp_register, 
                 count=1, 
-                slave=self._modbus_unit
+                device_id=self._modbus_unit
             )
             
             # Read mode - CORRECTED SYNTAX
             mode_result = await self._client.read_holding_registers(
                 address=self._mode_register, 
                 count=1, 
-                slave=self._modbus_unit
+                device_id=self._modbus_unit
             )
             
             # Read power state - CORRECTED SYNTAX  
             power_result = await self._client.read_holding_registers(
                 address=self._power_register, 
                 count=1, 
-                slave=self._modbus_unit
+                device_id=self._modbus_unit
             )
             
             # Read target temperature - CORRECTED SYNTAX
             target_result = await self._client.read_holding_registers(
                 address=self._target_temp_register, 
                 count=1, 
-                slave=self._modbus_unit
+                device_id=self._modbus_unit
             )
 
             # Process results (this part stays the same)
@@ -304,7 +304,7 @@ class MideaWaterHeater(WaterHeaterEntity, RestoreEntity):
             result = await self._client.write_register(
                     address=self._target_temp_register,
                     value=int(temperature),
-                    slave=self._modbus_unit
+                    device_id=self._modbus_unit
             )
             
             if not result.isError():
@@ -330,19 +330,19 @@ class MideaWaterHeater(WaterHeaterEntity, RestoreEntity):
                 result = await self._client.write_register(
                     address=self._power_register,
                     value=0, 
-                    slave=self._modbus_unit
+                    device_id=self._modbus_unit
                 )
             elif operation_mode in mode_values:
                 # Set mode first, then turn on power
                 mode_result = await self._client.write_register(
                     address=self._mode_register,
                     value=mode_values[operation_mode],
-                    slave=self._modbus_unit
+                    device_id=self._modbus_unit
                 )
                 power_result = await self._client.write_register(
                     address=self._power_register,
                     value=1, 
-                    slave=self._modbus_unit
+                    device_id=self._modbus_unit
                 )
                 result = mode_result  # Check mode write success
             
