@@ -39,6 +39,7 @@ class MideaModeSelect(SelectEntity):
 
     def __init__(self, config: dict):
         """Initialize the mode selector."""
+        self._offline_mode = True  # Set to False for production
         self._config = config
         
         # Entity attributes
@@ -138,7 +139,7 @@ class MideaModeSelect(SelectEntity):
                 self._attr_available = False
                 
         except Exception as ex:
-            _LOGGER.error("Error reading mode for %s: %s", self._attr_name, ex)
+            _LOGGER.warning("Cannot connect to %s, will retry: %s", self._attr_name, ex)
             self._attr_available = False
         
         self.async_write_ha_state()

@@ -1,4 +1,4 @@
-"""Support for Midea Heat Pump switches."""
+"""Support for Midea Heat Pump power switch."""
 import logging
 import asyncio
 from pymodbus.client import AsyncModbusTcpClient
@@ -14,10 +14,6 @@ from .const import (
     CONF_MODBUS_UNIT,
     CONF_SCAN_INTERVAL,
     CONF_POWER_REGISTER,
-    CONF_MODE_REGISTER,
-    CONF_ECO_MODE_VALUE,
-    CONF_PERFORMANCE_MODE_VALUE,
-    CONF_ELECTRIC_MODE_VALUE,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -36,11 +32,15 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
+# Keep only the MideaPowerSwitch class, remove MideaModeSwitch entirely
+
+
 class MideaPowerSwitch(SwitchEntity):
     """Representation of the main power switch."""
 
     def __init__(self, config: dict):
         """Initialize the power switch."""
+        self._offline_mode = True  # Set to False for production
         self._config = config
         
         # Entity attributes
@@ -129,7 +129,7 @@ class MideaPowerSwitch(SwitchEntity):
                 self._attr_available = False
                 
         except Exception as ex:
-            _LOGGER.error("Error reading power state: %s", ex)
+            _LOGGER.warning("Cannot connect to %s, will retry: %s", self._attr_name, ex)
             self._attr_available = False
         
         self.async_write_ha_state()
@@ -162,143 +162,3 @@ class MideaPowerSwitch(SwitchEntity):
                 
         except Exception as ex:
             _LOGGER.error("Error writing power state: %s", ex)
-
-
-class MideaModeSwitch(SwitchEntity):
-    """Representation of a mode switch."""
-
-    def __init__(self, config: dict, mode_id: str, name: str, mode_value: int):
-        """Initialize the mode switch."""
-        self._config = config
-        self._mode_id = mode_id
-        self._mode_value = mode_value
-        
-        # Entity attributes
-        self._attr_name = name
-        self._attr_unique_id = f"midea_{config[CONF_HOST]}_{config[CONF_MODBUS_UNIT]}_mode_{mode_id}"
-        
-        # Mode icons
-        mode_icons = {
-            "eco": "mdi:leaf",
-            "performance": "mdi:speedometer",
-            "electric": "mdi:lightning-bolt"
-        }
-        self._attr_icon = mode_icons.get(mode_id, "mdi:cog")
-        
-        # Connection settings
-        self._host = config[CONF_HOST]
-        self._port = config[CONF_PORT]
-        self._modbus_unit = config[CONF_MODBUS_UNIT]
-        self._scan_interval = config[CONF_SCAN_INTERVAL]
-        self._mode_register = config[CONF_MODE_REGISTER]
-        
-        # State
-        self._attr_is_on = False
-        self._client = None
-        self._update_task = None
-        self._attr_available = False
-        self._attr_should_poll = False
-
-    @property
-    def device_info(self):
-        """Return device info to link this switch to the main device."""
-        return {
-            "identifiers": {(DOMAIN, f"{self._config[CONF_HOST]}_{self._config[CONF_MODBUS_UNIT]}")},
-            "name": f"Midea Heat Pump ({self._config[CONF_HOST]})",
-            "manufacturer": "Midea",
-            "model": "Heat Pump Water Heater",
-        }
-
-    async def async_added_to_hass(self):
-        """Run when entity about to be added."""
-        await super().async_added_to_hass()
-        
-        self._client = AsyncModbusTcpClient(host=self._host, port=self._port)
-        await self._start_polling()
-
-    async def async_will_remove_from_hass(self):
-        """Run when entity will be removed."""
-        await self._stop_polling()
-        if self._client and self._client.connected:
-            self._client.close()
-
-    async def _start_polling(self):
-        """Start the polling task."""
-        if self._update_task:
-            self._update_task.cancel()
-        
-        self._update_task = asyncio.create_task(self._polling_loop())
-
-    async def _stop_polling(self):
-        """Stop the polling task."""
-        if self._update_task:
-            self._update_task.cancel()
-            self._update_task = None
-
-    async def _polling_loop(self):
-        """Main polling loop."""
-        while True:
-            try:
-                await self._update_from_modbus()
-                await asyncio.sleep(self._scan_interval)
-            except asyncio.CancelledError:
-                break
-            except Exception as ex:
-                _LOGGER.error("Error in polling loop for %s: %s", self._attr_name, ex)
-                await asyncio.sleep(self._scan_interval)
-
-    async def _update_from_modbus(self):
-        """Read mode state from modbus."""
-        try:
-            if not self._client.connected:
-                await self._client.connect()
-            
-            result = await self._client.read_holding_registers(
-                address=self._mode_register,
-                count=1,
-                slave=self._modbus_unit
-            )
-            
-            if not result.isError():
-                current_mode = result.registers[0]
-                self._attr_is_on = (current_mode == self._mode_value)
-                self._attr_available = True
-            else:
-                self._attr_available = False
-                
-        except Exception as ex:
-            _LOGGER.error("Error reading mode state for %s: %s", self._attr_name, ex)
-            self._attr_available = False
-        
-        self.async_write_ha_state()
-
-    async def async_turn_on(self, **kwargs):
-        """Turn the mode on."""
-        await self._write_mode_state(self._mode_value)
-
-    async def async_turn_off(self, **kwargs):
-        """Turn the mode off (sets to eco mode)."""
-        # When turning off a mode, default to eco mode
-        eco_value = self._config[CONF_ECO_MODE_VALUE]
-        await self._write_mode_state(eco_value)
-
-    async def _write_mode_state(self, value: int):
-        """Write mode state to modbus."""
-        try:
-            if not self._client.connected:
-                await self._client.connect()
-            
-            result = await self._client.write_register(
-                address=self._mode_register,
-                value=value,
-                slave=self._modbus_unit
-            )
-            
-            if not result.isError():
-                self._attr_is_on = (value == self._mode_value)
-                self.async_write_ha_state()
-            else:
-                _LOGGER.error("Failed to write mode state for %s", self._attr_name)
-                
-        except Exception as ex:
-            _LOGGER.error("Error writing mode state for %s: %s", self._attr_name, ex)

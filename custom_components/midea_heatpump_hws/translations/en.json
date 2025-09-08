@@ -3,12 +3,13 @@
     "step": {
       "user": {
         "title": "Modbus Connection Settings",
-        "description": "Configure the TCP connection to your Modbus-Ethernet/WiFi adapter",
+        "description": "Configure the TCP connection to your EW11-A adapter",
         "data": {
           "host": "IP Address",
           "port": "Port",
           "modbus_unit": "Modbus Unit ID",
-          "scan_interval": "Scan Interval (seconds)"
+          "scan_interval": "Scan Interval (seconds)",
+          "skip_validation": "Skip Connection Test (for offline setup)"
         }
       },
       "registers": {
@@ -84,28 +85,28 @@
         "title": "Update Register Settings",
         "description": "Modify register addresses and scaling",
         "data": {
-          "power_register": "Power On/Off Register",
-          "mode_register": "Operation Mode Register",
-          "temp_register": "Current Temperature Register",
+          "power_register": "Power Register",
+          "mode_register": "Mode Register",
+          "temp_register": "Temperature Register",
           "target_temp_register": "Target Temperature Register",
           "eco_mode_value": "Eco Mode Value",
-          "performance_mode_value": "Performance/Hybrid Mode Value", 
-          "electric_mode_value": "Electric/E-Heater Mode Value",
+          "performance_mode_value": "Performance Mode Value", 
+          "electric_mode_value": "Electric Mode Value",
           "temp_offset": "Temperature Offset",
           "temp_scale": "Temperature Scale"
         }
       },
       "sensors": {
-        "title": "Update Optional Sensors",
+        "title": "Update Additional Sensors",
         "description": "Configure optional temperature sensors",
         "data": {
-          "tank_top_temp_register": "Top of Tank Temperature Register",
-          "tank_bottom_temp_register": "Bottom of Tan Temperature Register",
+          "tank_top_temp_register": "Tank Top Temperature Register",
+          "tank_bottom_temp_register": "Tank Bottom Temperature Register",
           "condensor_temp_register": "Condensor Temperature Register",
           "outdoor_temp_register": "Outdoor Temperature Register",
           "exhaust_temp_register": "Exhaust Gas Temperature Register",
           "suction_temp_register": "Suction Temperature Register",
-          "enable_additional_sensors": "Enable Optional Sensors"
+          "enable_additional_sensors": "Enable Additional Sensors"
         }
       },
       "settings": {

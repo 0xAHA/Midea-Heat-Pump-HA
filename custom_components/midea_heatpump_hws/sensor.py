@@ -94,6 +94,7 @@ class MideaTemperatureSensor(SensorEntity):
 
     def __init__(self, config: dict, sensor_id: str, name: str, register: int, use_scaling: bool):
         """Initialize the temperature sensor."""
+        self._offline_mode = True  # Set to False for production
         self._config = config
         self._sensor_id = sensor_id
         self._register = register
@@ -199,7 +200,7 @@ class MideaTemperatureSensor(SensorEntity):
                 self._attr_available = False
                 
         except Exception as ex:
-            _LOGGER.error("Error reading %s: %s", self._attr_name, ex)
+            _LOGGER.warning("Cannot connect to %s, will retry: %s", self._attr_name, ex)
             self._attr_available = False
         
         self.async_write_ha_state()
