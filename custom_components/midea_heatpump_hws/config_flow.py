@@ -64,10 +64,11 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
     """Validate the modbus connection with retry logic."""
     
     # Skip validation if requested
+    '''
     if data.get("skip_validation", False):
         _LOGGER.info("Skipping connection validation as requested")
         return {"title": f"Midea Heat Pump ({data[CONF_HOST]}) - Offline Setup"}
-    
+    '''
     client = None
     max_retries = 3
     
@@ -169,7 +170,7 @@ class MideaHeatPumpConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # info = await validate_connection(self.hass, user_input)
             
             # Use fake validation result for offline testing
-            info = {"title": f"Midea Heat Pump ({user_input[CONF_HOST]}) - Offline Setup"}
+            info = {"title": f"Midea Heat Pump ({user_input[CONF_HOST]})"}
             
         except Exception as ex:
             _LOGGER.exception("Unexpected exception: %s", ex)
