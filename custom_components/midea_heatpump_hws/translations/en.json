@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Modbus Connection Settings",
-        "description": "Configure the TCP connection to your EW11-A adapter",
+        "description": "Configure the TCP connection to your Modbus adapter",
         "data": {
           "host": "IP Address",
           "port": "Port",
@@ -77,7 +77,7 @@
         "data": {
           "host": "IP Address",
           "port": "Port",
-          "modbus_unit": "Modbus Unit ID",
+          "modbus_unit": "Modbus Slave/Unit ID",
           "scan_interval": "Scan Interval (seconds)"
         }
       },

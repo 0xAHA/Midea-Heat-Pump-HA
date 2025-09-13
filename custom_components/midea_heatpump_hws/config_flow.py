@@ -1,6 +1,7 @@
 """Config flow for Midea Heat Pump Water Heater integration."""
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -20,10 +21,10 @@ _LOGGER = logging.getLogger(__name__)
 
 # Step 1: Connection settings
 STEP_CONNECTION_DATA_SCHEMA = vol.Schema({
-    vol.Required(CONF_HOST, default="192.168.1.80"): str,
+    vol.Required(CONF_HOST, default="192.168.1.60"): str,
     vol.Required(CONF_PORT, default=502): int,
     vol.Required("modbus_unit", default=1): int,
-    vol.Required("scan_interval", default=30): int,
+    vol.Required("scan_interval", default=60): int,
 })
 
 # Step 2: Core registers  
@@ -80,8 +81,8 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
                 if attempt < max_retries - 1:
                     _LOGGER.warning("Connection attempt %d failed, retrying...", attempt + 1)
                     if client:
-                        client.close()  # Don't await - it's synchronous
-                    await asyncio.sleep(1)  # Brief delay before retry
+                        client.close()
+                    await asyncio.sleep(1)
                     continue
                 else:
                     raise Exception("Unable to connect to modbus device after 3 attempts")
@@ -90,20 +91,20 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
             result = await client.read_holding_registers(
                 address=data.get("mode_register", 1),
                 count=1,
-                slave=data.get("modbus_unit", 1)
+                device_id=data.get("modbus_unit", 1)
             )
             
             if result.isError():
                 if attempt < max_retries - 1:
                     _LOGGER.warning("Read attempt %d failed, retrying...", attempt + 1)
-                    client.close()  # Don't await - it's synchronous
+                    client.close()
                     await asyncio.sleep(1)
                     continue
                 else:
                     raise Exception("Unable to read from modbus device after 3 attempts")
             
             # Success!
-            client.close()  # Don't await - it's synchronous
+            client.close()
             
             # Return info that you want to store in the config entry
             return {"title": f"Midea Heat Pump ({data[CONF_HOST]})"}
@@ -139,6 +140,12 @@ class MideaHeatPumpConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def __init__(self):
         """Initialize config flow."""
         self.data = {}
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry):
+        """Get the options flow for this handler."""
+        return MideaHeatPumpOptionsFlow(config_entry)
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -250,18 +257,22 @@ class MideaHeatPumpOptionsFlow(config_entries.OptionsFlow):
         self.config_entry = config_entry
         self.data = {}
 
-    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Show options menu."""
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Manage the options - show menu."""
         return self.async_show_menu(
             step_id="init",
             menu_options=["connection", "registers", "sensors", "settings"]
         )
 
-    async def async_step_connection(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Reconfigure connection settings."""
+    async def async_step_connection(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Update connection settings."""
         if user_input is not None:
             self.data.update(user_input)
-            return await self.async_step_complete()
+            return await self._update_and_reload()
 
         current_data = self.config_entry.data
         return self.async_show_form(
@@ -270,7 +281,9 @@ class MideaHeatPumpOptionsFlow(config_entries.OptionsFlow):
                 vol.Required(CONF_HOST, default=current_data.get(CONF_HOST)): str,
                 vol.Required(CONF_PORT, default=current_data.get(CONF_PORT, 502)): int,
                 vol.Required("modbus_unit", default=current_data.get("modbus_unit", 1)): int,
-                vol.Required("scan_interval", default=current_data.get("scan_interval", 30)): int,
+                vol.Required("scan_interval", default=current_data.get("scan_interval", 60)): vol.All(
+                    int, vol.Range(min=30, max=300)
+                ),
             }),
             description_placeholders={
                 "title": "Update Connection Settings",
@@ -278,11 +291,13 @@ class MideaHeatPumpOptionsFlow(config_entries.OptionsFlow):
             },
         )
 
-    async def async_step_registers(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Reconfigure register settings."""
+    async def async_step_registers(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Update register settings."""
         if user_input is not None:
             self.data.update(user_input)
-            return await self.async_step_complete()
+            return await self._update_and_reload()
 
         current_data = self.config_entry.data
         return self.async_show_form(
@@ -300,15 +315,17 @@ class MideaHeatPumpOptionsFlow(config_entries.OptionsFlow):
             }),
             description_placeholders={
                 "title": "Update Register Settings",
-                "description": "Modify register addresses and scaling"
+                "description": "Modify register addresses and scaling values"
             },
         )
 
-    async def async_step_sensors(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Reconfigure sensor settings."""
+    async def async_step_sensors(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Update sensor settings."""
         if user_input is not None:
             self.data.update(user_input)
-            return await self.async_step_complete()
+            return await self._update_and_reload()
 
         current_data = self.config_entry.data
         return self.async_show_form(
@@ -324,22 +341,26 @@ class MideaHeatPumpOptionsFlow(config_entries.OptionsFlow):
             }),
             description_placeholders={
                 "title": "Update Additional Sensors",
-                "description": "Configure optional temperature sensors"
+                "description": "Configure optional temperature sensor registers"
             },
         )
 
-    async def async_step_settings(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Reconfigure entity settings."""
+    async def async_step_settings(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Update entity settings."""
         if user_input is not None:
             self.data.update(user_input)
-            return await self.async_step_complete()
+            return await self._update_and_reload()
 
         current_data = self.config_entry.data
         return self.async_show_form(
             step_id="settings",
             data_schema=vol.Schema({
                 vol.Required(CONF_NAME, default=current_data.get(CONF_NAME, "Hot Water System")): str,
-                vol.Required("target_temperature", default=current_data.get("target_temperature", 65)): int,
+                vol.Required("target_temperature", default=current_data.get("target_temperature", 65)): vol.All(
+                    int, vol.Range(min=40, max=75)
+                ),
                 vol.Required("min_temp", default=current_data.get("min_temp", 40)): int,
                 vol.Required("max_temp", default=current_data.get("max_temp", 75)): int,
             }),
@@ -349,10 +370,18 @@ class MideaHeatPumpOptionsFlow(config_entries.OptionsFlow):
             },
         )
 
-    async def async_step_complete(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Complete the options update."""
-        # Update config entry with new data
+    async def _update_and_reload(self) -> FlowResult:
+        """Update config entry and reload."""
+        # Merge the new data with existing data
         new_data = {**self.config_entry.data, **self.data}
-        self.hass.config_entries.async_update_entry(self.config_entry, data=new_data)
+        
+        # Update the config entry
+        self.hass.config_entries.async_update_entry(
+            self.config_entry,
+            data=new_data
+        )
+        
+        # Trigger a reload of the integration
+        await self.hass.config_entries.async_reload(self.config_entry.entry_id)
         
         return self.async_create_entry(title="", data={})

@@ -12,22 +12,25 @@
 
 This integration creates a fully functional **water heater entity** in Home Assistant that can:
 
-- ✅ **UI Configuration**: Configure and re-configure via the Home Assistant UI - no more YAML!
-- ✅ **Control operation modes**: Off, Eco, Performance, Electric
-- ✅ **Set target temperature** via direct Modbus
-- ✅ **Monitor real-time temperature** with configurable scaling
-- ✅ **Integrate seamlessly** with automations, dashboards, and Lovelace cards
-- ✅ **Follow HA standards** using proper water_heater domain
+* ✅  **UI Configuration** : Configure entirely through the Home Assistant UI - no YAML required!
+* ✅  **Control operation modes** : Off, Eco, Performance (Hybrid), Electric (E-Heater)
+* ✅ **Set target temperature** via direct Modbus
+* ✅ **Monitor real-time temperature** with configurable scaling
+* ✅  **Track multiple sensors** : Tank, outdoor, condensor temperatures and more
+* ✅ **Integrate seamlessly** with automations, dashboards, and Lovelace cards
+* ✅ **Follow HA standards** using proper water_heater domain
 
 ## 🏆 Features
 
-- **Native water_heater entity** (not climate hack!)
-- **Built-in Modbus client** (no external modbus dependency!)
-- **Self-contained integration** - single configuration file
-- **Proper operation modes** using HA standards
-- **Real-time temperature monitoring** with configurable scaling
-- **Direct register control** for all functions
-- **Automatic polling** with configurable scan intervals
+* **Native water_heater entity** (not climate hack!)
+* **UI-based configuration** with step-by-step setup wizard
+* **Coordinated Modbus polling** - 90% reduction in network traffic!
+* **Built-in Modbus client** (no external modbus dependency!)
+* **Self-contained integration** - everything configured through UI
+* **Proper operation modes** using HA standards
+* **Real-time temperature monitoring** with configurable scaling
+* **Direct register control** for all functions
+* **Automatic polling** with configurable scan intervals
 
 ---
 
@@ -35,16 +38,14 @@ This integration creates a fully functional **water heater entity** in Home Assi
 
 ### Method 1: HACS (Recommended)
 
-1. **Add custom repository**:
-
-   - HACS → Integrations → ⋮ → Custom repositories
-   - Repository: `https://github.com/0xAHA/Midea-Heat-Pump-HA.git`
-   - Category: Integration
-2. **Install**:
-
-   - Search for "Midea Heatpump HWS"
-   - Click Download
-   - Restart Home Assistant
+1. **Add custom repository** :
+   * HACS → Integrations → ⋮ → Custom repositories
+   * Repository: `https://github.com/0xAHA/Midea-Heat-Pump-HA.git`
+   * Category: Integration
+2. **Install** :
+   * Search for "Midea Heatpump HWS"
+   * Click Download
+   * Restart Home Assistant
 
 ### Method 2: Manual Installation
 
@@ -54,42 +55,63 @@ This integration creates a fully functional **water heater entity** in Home Assi
 
 ---
 
-## 🏠 Home Assistant Configuration
+## 🏠 Configuration
 
-### Single Configuration Setup
+### UI Configuration (New in v0.2.0!)
 
-Add to your `configuration.yaml`:
+No more YAML editing!
+* If you were using a previous version, please remove the configuration from your configuration.yaml and modbus.yaml
 
-```yaml
-midea_heatpump_hws:
-  water_heatpump:
-    friendly_name: "Hot Water System"
-  
-    # Modbus connection
-    modbus_host: 192.168.1.80  # Your RS485-WiFi Adapter IP address
-    modbus_port: 502           # Your RS485-WiFi Adapter Modbus Port
-    modbus_unit: 1
-    scan_interval: 30
-  
-    # Register addresses
-    temp_register: 102
-    target_temp_register: 2
-    mode_register: 1
-    power_register: 0
-  
-    # Temperature scaling
-    temp_offset: -15
-    temp_scale: 0.5
-  
-    # Temperature settings
-    target_temperature: 65
-    min_temp: 40
-    max_temp: 75
-```
+Configure everything through the Home Assistant UI:
 
-**Result**: Creates `water_heater.water_heatpump` entity with your chosen friendly name
+1. **Add Integration** :
+   * Settings → Devices & Services → Add Integration
+   * Search for "Midea Heatpump HWS"
+   * Click to add
+2. **Step 1: Connection Settings**
+   * **Host** : IP address of your RS485-WiFi adapter (e.g., 192.168.1.80)
+   * **Port** : Modbus TCP port (usually 502)
+   * **Modbus Unit** : Device ID (usually 1)
+   * **Scan Interval** : How often to poll (60-300 seconds recommended)
+3. **Step 2: Register Configuration**
+   * Pre-configured for Midea 170L units
+   * Modify if your device uses different registers:
+     * **Power Register** : Control on/off (default: 0)
+     * **Mode Register** : Operation mode (default: 1)
+     * **Temperature Register** : Current water temp (default: 102)
+     * **Target Temp Register** : Set point (default: 2)
+     * **Mode Values** : Eco=1, Performance=2, Electric=4
+     * **Temperature Scaling** : Offset=-15, Scale=0.5
+4. **Step 3: Optional Sensors**
+   * Enable/disable additional temperature sensors
+   * Configure register addresses for:
+     * Tank top/bottom temperatures
+     * Condensor temperature
+     * Outdoor temperature
+     * Exhaust gas temperature
+     * Suction temperature
+5. **Step 4: Entity Settings**
+   * **Name** : Friendly name for your water heater
+   * **Temperature Limits** : Min/max settable temperatures
+   * **Default Target** : Initial target temperature
 
-**No external modbus.yaml setup required!** Everything is self-contained.
+### Reconfiguring
+
+After initial setup, you can modify ALL settings without removing the integration:
+
+1. **Access Configuration** :
+   * Settings → Devices & Services → Midea Heatpump HWS → Configure
+2. **Choose what to update** :
+   * **Connection** : Modbus host, port, unit ID, scan interval
+   * **Registers** : All register addresses, mode values, temperature scaling
+   * **Sensors** : Additional sensor registers and enable/disable
+   * **Settings** : Entity name, temperature limits, default target
+3. **Apply changes** :
+   * After updating any section, the integration automatically reloads
+   * All entities update with new configuration immediately
+   * No need to restart Home Assistant
+
+This allows complete flexibility to adjust for different heat pump models or troubleshoot issues without losing your automations and dashboard configurations!
 
 ---
 
@@ -103,9 +125,24 @@ midea_heatpump_hws:
 | **Performance** | High performance heating | Hybrid mode      | 2            |
 | **Electric**    | Electric heating         | E-heater mode    | 4            |
 
-## 🔬🤝 Operation Mode Compatibility
+## 🔬 Register Reference
 
-The operation modes are based on my own Midea unit. If you have other operation modes feel free to create a github issue to have them added to this integration. You can test yourself using a free modbus tester, and setting the value of register 1 to a different value (see above for the known output values for current modes)
+### Default Registers (Midea 170L)
+
+
+| Function           | Register | Description    | Scaling           |
+| -------------------- | ---------- | ---------------- | ------------------- |
+| Power State        | 0        | On/Off control | None              |
+| Operation Mode     | 1        | Current mode   | None              |
+| Target Temperature | 2        | Set point      | None              |
+| Tank Top Temp      | 101      | T5U sensor     | (raw × 0.5) - 15 |
+| Tank Bottom Temp   | 102      | T5L sensor     | (raw × 0.5) - 15 |
+| Condensor Temp     | 103      | T3 sensor      | (raw × 0.5) - 15 |
+| Outdoor Temp       | 104      | T4 sensor      | (raw × 0.5) - 15 |
+| Exhaust Gas Temp   | 105      | Tp sensor      | No scaling        |
+| Suction Temp       | 106      | Th sensor      | (raw × 0.5) - 15 |
+
+**Note** : Your heat pump model may use different registers. Use the configuration UI to adjust as needed.
 
 ---
 
@@ -115,20 +152,30 @@ The operation modes are based on my own Midea unit. If you have other operation 
 
 ```yaml
 type: tile
-entity: water_heater.water_heatpump
-features_position: bottom
-vertical: false
-name: Water Heater
-icon: mdi:water-boiler
-state_content: current_temperature
+entity: water_heater.hot_water_system
 features:
   - type: target-temperature
   - type: water-heater-operation-modes
     operation_modes:
-      - "off"
-      - eco
-      - performance
-      - electric
+      - "Off"
+      - "Eco"
+      - "Performance"
+      - "Electric"
+```
+
+### Temperature Sensors Card
+
+```yaml
+type: entities
+entities:
+  - entity: sensor.current_temperature
+    name: Current Water Temp
+  - entity: sensor.tank_top_temperature
+    name: Tank Top
+  - entity: sensor.tank_bottom_temperature
+    name: Tank Bottom
+  - entity: sensor.outdoor_temperature
+    name: Outdoor
 ```
 
 ---
@@ -146,9 +193,9 @@ automation:
     action:
       - service: water_heater.set_operation_mode
         target:
-          entity_id: water_heater.water_heatpump
+          entity_id: water_heater.hot_water_system
         data:
-          operation_mode: "eco"
+          operation_mode: "Eco"
 
   - alias: "Heat pump performance mode morning"
     trigger:
@@ -157,9 +204,9 @@ automation:
     action:
       - service: water_heater.set_operation_mode
         target:
-          entity_id: water_heater.water_heatpump
+          entity_id: water_heater.hot_water_system
         data:
-          operation_mode: "performance"
+          operation_mode: "Performance"
 ```
 
 ### Temperature-based control
@@ -169,16 +216,35 @@ automation:
   - alias: "Boost heating when temperature low"
     trigger:
       - platform: numeric_state
-        entity_id: water_heater.water_heatpump
+        entity_id: water_heater.hot_water_system
         attribute: current_temperature
         below: 45
     action:
       - service: water_heater.set_operation_mode
         target:
-          entity_id: water_heater.water_heatpump
+          entity_id: water_heater.hot_water_system
         data:
-          operation_mode: "performance"
+          operation_mode: "Performance"
 ```
+
+---
+
+## 🚀 Performance Improvements (v0.2.0)
+
+### Coordinator Pattern Implementation
+
+The integration now uses a shared coordinator pattern for all Modbus communication:
+
+* **Before** : Each entity polled independently → 10+ connections/minute
+* **After** : Single coordinated poll → 1 connection/minute
+* **Result** : **90% reduction in Modbus traffic!**
+
+Benefits:
+
+* Reduced load on RS485 adapters
+* Synchronized entity updates
+* Better error handling
+* More reliable operation
 
 ---
 
@@ -187,27 +253,35 @@ automation:
 ### Common Issues
 
 
-| Issue                           | Solution                                       |
-| --------------------------------- | ------------------------------------------------ |
-| Entity shows as`unavailable`    | Check modbus host IP and network connectivity  |
-| Target temperature not changing | Verify register addresses and modbus unit ID   |
-| Modes not switching             | Check mode register values and power register  |
-| Connection timeouts             | Verify RS485 Adapter is powered and accessible |
+| Issue                           | Solution                                      |
+| --------------------------------- | ----------------------------------------------- |
+| Entity shows as`unavailable`    | Check modbus host IP and network connectivity |
+| Target temperature not changing | Verify register addresses match your model    |
+| Modes not switching             | Check mode register values and power register |
+| Connection timeouts             | Increase scan interval in configuration       |
+| Wrong temperature values        | Adjust temperature offset and scale in config |
 
 ### Testing Other HWS Models
 
-If you have a HWS system that doesn't suit these modbus registers, or has additional operating modes, use the python script referenced at the links below to check what's going on with your system and let us know!
+If you have a HWS system that uses different modbus registers or has additional operating modes:
 
-* [Script README](https://github.com/0xAHA/Midea-Heat-Pump-HA/blob/main/files/README_Modbus.md)
-* [Modbus Test Script](https://github.com/0xAHA/Midea-Heat-Pump-HA/blob/main/files/modbus_test.py)
+1. Use the configuration UI to adjust register addresses
+2. Test with the Python script to discover your registers:
+   * [Script README](https://github.com/0xAHA/Midea-Heat-Pump-HA/blob/main/files/README_Modbus.md)
+   * [Modbus Test Script](https://github.com/0xAHA/Midea-Heat-Pump-HA/blob/main/files/modbus_test.py)
+3. Create a GitHub issue with your findings to help others!
 
-### Debug Steps
+### Debug Logging
 
-1. **Check network connectivity** to your RS485 adapter
-2. **Verify register addresses** match your heat pump model
-3. **Check logs** for modbus connection errors
-4. **Test registers manually** using Developer Tools
-5. **Restart HA** after configuration changes
+Add to `configuration.yaml`:
+
+```yaml
+logger:
+  default: info
+  logs:
+    custom_components.midea_heatpump_hws: debug
+    custom_components.midea_heatpump_hws.coordinator: debug
+```
 
 ---
 
@@ -215,25 +289,26 @@ If you have a HWS system that doesn't suit these modbus registers, or has additi
 
 **Based on the excellent work of:**
 
-- **dgomes** - [Original Generic Water Heater](https://github.com/dgomes/ha_generic_water_heater)
-- **ill_hey** - Original HA Community post and hardware instructions
-- **BrittonA** - Initial Modbus YAML configuration
+* **dgomes** - [Original Generic Water Heater](https://github.com/dgomes/ha_generic_water_heater)
+* **ill_hey** - Original HA Community post and hardware instructions
+* **BrittonA** - Initial Modbus YAML configuration
 
 **Source threads:**
 
-- [HA Community Discussion](https://community.home-assistant.io/t/chromagen-midea-170l-heat-pump-hot-water-system-modbus-integration-success/773718/12)
-- [BrittonA's Gist](https://gist.github.com/BrittonA/339d25efb934bdb4f451ba7e2f920ba3)
+* [HA Community Discussion](https://community.home-assistant.io/t/chromagen-midea-170l-heat-pump-hot-water-system-modbus-integration-success/773718/12)
+* [BrittonA&#39;s Gist](https://gist.github.com/BrittonA/339d25efb934bdb4f451ba7e2f920ba3)
 
 ---
 
 ## 📈 Roadmap
 
-- [X] **Built-in Modbus integration** ✅ Completed in v0.1.0
-- [ ] **Configuration UI** (no more YAML editing)
-- [ ] **Enhanced diagnostics** (connection status, detailed error reporting)
-- [ ] **Energy monitoring** (power consumption tracking)
-- [ ] **Advanced scheduling** (built-in time/temperature profiles)
-- [ ] **Multi-device support** (multiple heat pumps)
+* [X] **Built-in Modbus integration** ✅ Completed in v0.1.0
+* [X] **Configuration UI** ✅ Completed in v0.2.0
+* [X] **Coordinated polling** ✅ Completed in v0.2.0
+* [ ] **Enhanced diagnostics** (connection status, detailed error reporting)
+* [ ] **Energy monitoring** (power consumption tracking)
+* [ ] **Advanced scheduling** (built-in time/temperature profiles)
+* [X] **Multi-device support** (multiple heat pumps)
 
 ---
 
@@ -257,9 +332,9 @@ This project is licensed under the MIT License - see the [LICENSE](https://githu
 
 If this integration helped you, please:
 
-- ⭐ **Star** this repository
-- 🐛 **Report** any issues
-- 💡 **Suggest** improvements
-- 📢 **Share** with the community
+* ⭐ **Star** this repository
+* 🐛 **Report** any issues
+* 💡 **Suggest** improvements
+* 📢 **Share** with the community
 
 *Happy heating! 🔥*
