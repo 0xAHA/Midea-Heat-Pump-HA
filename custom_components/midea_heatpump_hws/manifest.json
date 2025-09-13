@@ -2,11 +2,11 @@
   "domain": "midea_heatpump_hws",
   "name": "Midea Heatpump HWS",
   "codeowners": ["@0xAHA"],
+  "config_flow": true,
   "dependencies": ["sensor", "switch"],
   "documentation": "https://github.com/0xAHA/Midea-Heat-Pump-HA",
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/0xAHA/Midea-Heat-Pump-HA/issues",
   "requirements": ["pymodbus>=3.11.0"],
-  "config_flow": true,
   "version": "0.2.0" 
 }
