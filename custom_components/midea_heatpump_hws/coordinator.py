@@ -357,7 +357,10 @@ class MideaModbusCoordinator(DataUpdateCoordinator):
 
                     elif operation == "operation_mode":
                         # Handle water heater operation mode changes
-                        if params == "Off":
+                        # Convert to lowercase for comparison
+                        mode_lower = params.lower() if isinstance(params, str) else params
+                        
+                        if mode_lower == "off":
                             _LOGGER.debug("operation_mode: turning Off -> writing power 0 to %s (device_id=%s)", self.power_register, self.modbus_unit)
                             try:
                                 result = await self._client.write_register(
@@ -376,8 +379,8 @@ class MideaModbusCoordinator(DataUpdateCoordinator):
                             else:
                                 _LOGGER.info("operation_mode: turned Off successfully")
 
-                        elif params in self.mode_values and self.mode_values[params] is not None:
-                            mode_value = self.mode_values[params]
+                        elif mode_lower in self.mode_values and self.mode_values[mode_lower] is not None:
+                            mode_value = self.mode_values[mode_lower]
                             _LOGGER.debug("operation_mode: setting mode %s (raw=%s) then power on", params, mode_value)
                             try:
                                 mode_result = await self._client.write_register(
@@ -411,9 +414,6 @@ class MideaModbusCoordinator(DataUpdateCoordinator):
                                     _LOGGER.error("Failed to turn on power after mode change (exception): %s", power_result)
                                 else:
                                     _LOGGER.info("Successfully set operation_mode = %s", params)
-
-                    else:
-                        _LOGGER.warning("Unknown pending write operation: %s", operation)
 
                 except Exception as err:
                     _LOGGER.error("Error writing %s: %s\n%s", operation, err, traceback.format_exc())

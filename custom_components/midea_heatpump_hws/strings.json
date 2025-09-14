@@ -23,16 +23,24 @@
         "data": {
           "power_register": "Power Register",
           "mode_register": "Mode Register",
+          "temp_register": "Current Temperature Register",
+          "target_temp_register": "Target Temperature Register",
           "eco_mode_value": "Eco Mode Value",
           "performance_mode_value": "Performance Mode Value",
-          "electric_mode_value": "Electric Mode Value"
+          "electric_mode_value": "Electric Mode Value",
+          "temp_offset": "Sensors Temperature Offset",
+          "temp_scale": "Sensors Temperature Scale"
         },
         "data_description": {
           "power_register": "Register address for on/off control (default: 0)",
           "mode_register": "Register address for operation mode (default: 1)",
+          "temp_register": "Register address for Current Temperature",
+          "target_temp_register": "Register for target temperature (default: 2)",
           "eco_mode_value": "Value to write for Eco mode (default: 1)",
           "performance_mode_value": "Value to write for Performance mode (default: 2)",
-          "electric_mode_value": "Value to write for Electric mode (default: 4)"
+          "electric_mode_value": "Value to write for Electric mode (default: 4)",
+          "temp_offset": "Sensors Temperature Offset",
+          "temp_scale": "Sensors Temperature Scale"
         }
       },
       "temp_registers": {
