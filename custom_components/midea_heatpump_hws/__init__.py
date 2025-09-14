@@ -7,10 +7,18 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN, PLATFORMS
+from .const import DOMAIN
 from .coordinator import MideaModbusCoordinator
 
 _LOGGER = logging.getLogger(__name__)
+
+# Define platforms here directly to avoid import issues
+PLATFORMS: list[Platform] = [
+    Platform.WATER_HEATER,
+    Platform.SENSOR,
+    Platform.SWITCH,
+    Platform.SELECT,
+]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -29,17 +37,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "config": entry.data,
     }
 
+    # Set up platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
-    # Setup options update listener
-    entry.async_on_unload(entry.add_update_listener(async_reload_entry))
+    # Setup update listener for options flow
+    entry.async_on_unload(entry.add_update_listener(update_listener))
 
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
+    # Unload platforms
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    
     if unload_ok:
         # Clean up coordinator
         coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
@@ -51,7 +62,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return unload_ok
 
 
-async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Reload config entry."""
-    await async_unload_entry(hass, entry)
-    await async_setup_entry(hass, entry)
+async def update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Handle options update."""
+    # Reload the integration
+    await hass.config_entries.async_reload(entry.entry_id)

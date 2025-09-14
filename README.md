@@ -3,7 +3,7 @@
 *Transform your Chromagen Midea 170L heat pump into a smart, Home Assistant-controlled water heater entity!*
 
 ![HACS Badge](https://img.shields.io/badge/HACS-Custom-orange.svg)
-![Version](https://img.shields.io/badge/Version-0.2.0-blue.svg)
+![Version](https://img.shields.io/badge/Version-0.2.1-blue.svg)
 [![GitHub Issues](https://img.shields.io/github/issues/0xAHA/Midea-Heat-Pump-HA.svg)](https://github.com/0xAHA/Midea-Heat-Pump-HA/issues)
 
 ---
@@ -273,7 +273,7 @@ If you have a HWS system that uses different modbus registers or has additional 
 
 ### Debug Logging
 
-Add to `configuration.yaml`:
+Available from the integrations UI, or add to `configuration.yaml`:
 
 ```yaml
 logger:
@@ -305,10 +305,10 @@ logger:
 * [X] **Built-in Modbus integration** ✅ Completed in v0.1.0
 * [X] **Configuration UI** ✅ Completed in v0.2.0
 * [X] **Coordinated polling** ✅ Completed in v0.2.0
-* [ ] **Enhanced diagnostics** (connection status, detailed error reporting)
+* [ ] **Enhanced diagnostics** (connection status, detailed error reporting) 🟠 Debug logs added in v0.2.1
 * [ ] **Energy monitoring** (power consumption tracking)
 * [ ] **Advanced scheduling** (built-in time/temperature profiles)
-* [X] **Multi-device support** (multiple heat pumps)
+* [X] **Multi-device support** (multiple heat pumps) ✅ Completed in v0.2.0
 
 ---
 

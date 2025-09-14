@@ -98,6 +98,11 @@ class MideaWaterHeater(CoordinatorEntity, WaterHeaterEntity, RestoreEntity):
         }
     
     @property
+    def target_temperature_step(self):
+        """Return the supported step of target temperature."""
+        return 1.0  # Whole numbers only
+    
+    @property
     def temperature_unit(self):
         """Return the unit of measurement."""
         return self.hass.config.units.temperature_unit

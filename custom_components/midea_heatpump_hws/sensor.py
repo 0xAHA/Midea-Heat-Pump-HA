@@ -125,7 +125,7 @@ class MideaTemperatureSensor(CoordinatorEntity, SensorEntity):
         return {
             "identifiers": {(DOMAIN, f"{self._config['host']}_{self._config[CONF_MODBUS_UNIT]}")},
             "name": f"Midea Heat Pump ({self._config['host']})",
-            "manufacturer": "Midea",
+            "manufacturer": "0xAHA",
             "model": "Heat Pump Water Heater",
         }
 
