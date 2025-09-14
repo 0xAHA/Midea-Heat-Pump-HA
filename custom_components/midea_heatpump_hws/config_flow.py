@@ -64,11 +64,10 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
     """Validate the modbus connection with retry logic."""
     
     # Skip validation if requested
-    '''
     if data.get("skip_validation", False):
         _LOGGER.info("Skipping connection validation as requested")
         return {"title": f"Midea Heat Pump ({data[CONF_HOST]}) - Offline Setup"}
-    '''
+    
     client = None
     max_retries = 3
     
@@ -170,7 +169,7 @@ class MideaHeatPumpConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # info = await validate_connection(self.hass, user_input)
             
             # Use fake validation result for offline testing
-            info = {"title": f"Midea Heat Pump ({user_input[CONF_HOST]})"}
+            info = {"title": f"Midea Heat Pump ({user_input[CONF_HOST]}) - Offline Setup"}
             
         except Exception as ex:
             _LOGGER.exception("Unexpected exception: %s", ex)
@@ -264,7 +263,7 @@ class MideaHeatPumpOptionsFlow(config_entries.OptionsFlow):
         """Manage the options - show menu."""
         return self.async_show_menu(
             step_id="init",
-            menu_options=["connection", "registers", "sensors", "settings"]
+            menu_options=["connection", "control_registers", "temp_registers", "sensors", "settings"]
         )
 
     async def async_step_connection(
@@ -292,38 +291,59 @@ class MideaHeatPumpOptionsFlow(config_entries.OptionsFlow):
             },
         )
 
-    async def async_step_registers(
+    async def async_step_control_registers(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Update register settings."""
+        """Update control register settings (no scaling)."""
         if user_input is not None:
             self.data.update(user_input)
             return await self._update_and_reload()
 
         current_data = self.config_entry.data
         return self.async_show_form(
-            step_id="registers",
+            step_id="control_registers",
             data_schema=vol.Schema({
                 vol.Required("power_register", default=current_data.get("power_register", 0)): int,
                 vol.Required("mode_register", default=current_data.get("mode_register", 1)): int,
-                vol.Required("temp_register", default=current_data.get("temp_register", 102)): int,
-                vol.Required("target_temp_register", default=current_data.get("target_temp_register", 2)): int,
                 vol.Required("eco_mode_value", default=current_data.get("eco_mode_value", 1)): int,
                 vol.Required("performance_mode_value", default=current_data.get("performance_mode_value", 2)): int,
                 vol.Required("electric_mode_value", default=current_data.get("electric_mode_value", 4)): int,
-                vol.Required("temp_offset", default=current_data.get("temp_offset", -15.0)): vol.Coerce(float),
-                vol.Required("temp_scale", default=current_data.get("temp_scale", 0.5)): vol.Coerce(float),
             }),
             description_placeholders={
-                "title": "Update Register Settings",
-                "description": "Modify register addresses and scaling values"
+                "title": "Update Control Registers",
+                "description": "Modify power and mode register addresses (no scaling needed)"
+            },
+        )
+
+    async def async_step_temp_registers(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Update temperature register settings with individual scaling."""
+        if user_input is not None:
+            self.data.update(user_input)
+            return await self._update_and_reload()
+
+        current_data = self.config_entry.data
+        return self.async_show_form(
+            step_id="temp_registers",
+            data_schema=vol.Schema({
+                vol.Required("temp_register", default=current_data.get("temp_register", 102)): int,
+                vol.Required("temp_offset", default=current_data.get("temp_offset", -15.0)): vol.Coerce(float),
+                vol.Required("temp_scale", default=current_data.get("temp_scale", 0.5)): vol.Coerce(float),
+                vol.Required("target_temp_register", default=current_data.get("target_temp_register", 2)): int,
+                vol.Required("target_temp_offset", default=current_data.get("target_temp_offset", 0.0)): vol.Coerce(float),
+                vol.Required("target_temp_scale", default=current_data.get("target_temp_scale", 1.0)): vol.Coerce(float),
+            }),
+            description_placeholders={
+                "title": "Update Temperature Registers",
+                "description": "Configure temperature registers with individual offset and scale values"
             },
         )
 
     async def async_step_sensors(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Update sensor settings."""
+        """Update sensor settings with shared scaling."""
         if user_input is not None:
             self.data.update(user_input)
             return await self._update_and_reload()
@@ -339,10 +359,12 @@ class MideaHeatPumpOptionsFlow(config_entries.OptionsFlow):
                 vol.Optional("exhaust_temp_register", default=current_data.get("exhaust_temp_register", 105)): int,
                 vol.Optional("suction_temp_register", default=current_data.get("suction_temp_register", 106)): int,
                 vol.Optional("enable_additional_sensors", default=current_data.get("enable_additional_sensors", True)): bool,
+                vol.Optional("sensors_temp_offset", default=current_data.get("sensors_temp_offset", -15.0)): vol.Coerce(float),
+                vol.Optional("sensors_temp_scale", default=current_data.get("sensors_temp_scale", 0.5)): vol.Coerce(float),
             }),
             description_placeholders={
                 "title": "Update Additional Sensors",
-                "description": "Configure optional temperature sensor registers"
+                "description": "Configure optional temperature sensors with shared offset and scale values"
             },
         )
 
@@ -362,7 +384,7 @@ class MideaHeatPumpOptionsFlow(config_entries.OptionsFlow):
                 vol.Required("target_temperature", default=current_data.get("target_temperature", 65)): vol.All(
                     int, vol.Range(min=40, max=75)
                 ),
-                vol.Required("min_temp", default=current_data.get("min_temp", 40)): int,
+                vol.Required("min_temp", default=current_data.get("min_temp", 60)): int,
                 vol.Required("max_temp", default=current_data.get("max_temp", 75)): int,
             }),
             description_placeholders={
@@ -382,7 +404,5 @@ class MideaHeatPumpOptionsFlow(config_entries.OptionsFlow):
             data=new_data
         )
         
-        # Trigger a reload of the integration
-        await self.hass.config_entries.async_reload(self.config_entry.entry_id)
-        
+        # The update_listener in __init__.py will handle the reload automatically
         return self.async_create_entry(title="", data={})
