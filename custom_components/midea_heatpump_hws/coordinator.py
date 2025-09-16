@@ -271,164 +271,188 @@ class MideaModbusCoordinator(DataUpdateCoordinator):
         """Process any pending write operations."""
         if not self._pending_writes:
             return
-
+            
         async with self._lock:
-            # iterate copy so we can clear original safely
-            pending = dict(self._pending_writes)
-            for operation, params in pending.items():
+            for operation, params in self._pending_writes.items():
                 try:
                     if operation == "target_temp":
-                        # Expect params to be the desired temperature (float or int, in human units)
-                        desired_temp = float(params)
-                        # Convert desired temp to register value using target scaling/offset:
-                        # register_value * scale + offset = desired_temp  => register_value = (desired_temp - offset) / scale
-                        try:
-                            register_value = int(round((desired_temp - self.target_temp_offset) / self.target_temp_scale))
-                        except Exception as ex:
-                            _LOGGER.exception("Failed to compute register value for target_temp: %s", ex)
-                            raise
-
-                        _LOGGER.debug(
-                            "Writing target_temp: desired=%s -> register_value=%s (scale=%s offset=%s) to reg %s (device_id=%s)",
-                            desired_temp, register_value, self.target_temp_scale, self.target_temp_offset,
-                            self.target_temp_register, self.modbus_unit
+                        # Log the incoming request
+                        _LOGGER.info("Target temp write requested: %s°C", params)
+                        
+                        # Check if target temp uses scaling
+                        if self.target_temp_scale != 1.0 or self.target_temp_offset != 0.0:
+                            # Reverse the scaling when writing back
+                            raw_value = int((params - self.target_temp_offset) / self.target_temp_scale)
+                            _LOGGER.info("Writing target temp with scaling: %s°C -> raw value %d (scale=%s, offset=%s)", 
+                                        params, raw_value, self.target_temp_scale, self.target_temp_offset)
+                        else:
+                            # No scaling - write the value directly
+                            raw_value = int(params)
+                            _LOGGER.info("Writing target temp without scaling: %s°C -> raw value %d", params, raw_value)
+                        
+                        # Validate the value is within reasonable bounds
+                        if raw_value < 0 or raw_value > 100:
+                            _LOGGER.error("Raw value %d seems out of bounds (0-100), check configuration", raw_value)
+                        
+                        _LOGGER.info("Sending write_register: address=%d, value=%d, device_id=%d", 
+                                    self.target_temp_register, raw_value, self.modbus_unit)
+                        
+                        result = await self._client.write_register(
+                            address=self.target_temp_register,
+                            value=raw_value,
+                            device_id=self.modbus_unit
                         )
-
-                        try:
+                        if result.isError():
+                            _LOGGER.error("Failed to write target temperature %s (raw=%d): %s", 
+                                        params, raw_value, result)
+                        else:
+                            _LOGGER.info("Successfully wrote target temp = %s (raw=%d)", params, raw_value)
+                    
+                    elif operation == "power_state":
+                        result = await self._client.write_register(
+                            address=self.power_register,
+                            value=1 if params else 0,
+                            device_id=self.modbus_unit
+                        )
+                        if result.isError():
+                            _LOGGER.error("Failed to write power state: %s", result)
+                        else:
+                            _LOGGER.debug("Successfully wrote power state = %s", params)
+                    
+                    elif operation == "mode":
+                        # Use lowercase mode values
+                        if params in self.mode_values:
                             result = await self._client.write_register(
-                                address=self.target_temp_register,
-                                value=register_value,
+                                address=self.mode_register,
+                                value=self.mode_values[params],
                                 device_id=self.modbus_unit
                             )
-                        except Exception as ex:
-                            _LOGGER.exception("Exception writing target temperature register: %s", ex)
-                            result = ex
-
-                        if hasattr(result, "isError") and result.isError():
-                            _LOGGER.error("Failed to write target temperature: %s", result)
-                        elif isinstance(result, Exception):
-                            _LOGGER.error("Failed to write target temperature (exception): %s", result)
-                        else:
-                            _LOGGER.info("Successfully wrote target temp register=%s value=%s (desired=%s)",
-                                         self.target_temp_register, register_value, desired_temp)
-
-                    elif operation == "power_state":
-                        val = 1 if params else 0
-                        _LOGGER.debug("Writing power_state -> %s to reg %s (device_id=%s)", val, self.power_register, self.modbus_unit)
-                        try:
+                            if result.isError():
+                                _LOGGER.error("Failed to write mode: %s", result)
+                            else:
+                                _LOGGER.debug("Successfully wrote mode = %s", params)
+                    
+                    elif operation == "operation_mode":
+                        # Handle water heater operation mode changes (now lowercase!)
+                        if params == "off":  # lowercase!
+                            # Turn off power
                             result = await self._client.write_register(
                                 address=self.power_register,
-                                value=val,
+                                value=0,
                                 device_id=self.modbus_unit
                             )
-                        except Exception as ex:
-                            _LOGGER.exception("Exception writing power state: %s", ex)
-                            result = ex
-
-                        if hasattr(result, "isError") and result.isError():
-                            _LOGGER.error("Failed to write power state: %s", result)
-                        elif isinstance(result, Exception):
-                            _LOGGER.error("Failed to write power state (exception): %s", result)
-                        else:
-                            _LOGGER.info("Successfully wrote power state = %s", params)
-
-                    elif operation == "mode":
-                        if params in self.mode_values and self.mode_values[params] is not None:
-                            mode_value = self.mode_values[params]
-                            _LOGGER.debug("Writing mode -> %s (raw=%s) to reg %s (device_id=%s)", params, mode_value, self.mode_register, self.modbus_unit)
-                            try:
-                                result = await self._client.write_register(
-                                    address=self.mode_register,
-                                    value=mode_value,
-                                    device_id=self.modbus_unit
-                                )
-                            except Exception as ex:
-                                _LOGGER.exception("Exception writing mode: %s", ex)
-                                result = ex
-
-                            if hasattr(result, "isError") and result.isError():
-                                _LOGGER.error("Failed to write mode: %s", result)
-                            elif isinstance(result, Exception):
-                                _LOGGER.error("Failed to write mode (exception): %s", result)
-                            else:
-                                _LOGGER.info("Successfully wrote mode = %s", params)
-                        else:
-                            _LOGGER.error("Tried to write unknown mode: %s", params)
-
-                    elif operation == "operation_mode":
-                        # Handle water heater operation mode changes
-                        # Convert to lowercase for comparison
-                        mode_lower = params.lower() if isinstance(params, str) else params
-                        
-                        if mode_lower == "off":
-                            _LOGGER.debug("operation_mode: turning Off -> writing power 0 to %s (device_id=%s)", self.power_register, self.modbus_unit)
-                            try:
-                                result = await self._client.write_register(
+                        elif params in self.mode_values:  # mode_values should have lowercase keys
+                            # Set mode first, then turn on power
+                            mode_result = await self._client.write_register(
+                                address=self.mode_register,
+                                value=self.mode_values[params],
+                                device_id=self.modbus_unit
+                            )
+                            if not mode_result.isError():
+                                power_result = await self._client.write_register(
                                     address=self.power_register,
-                                    value=0,
+                                    value=1,
                                     device_id=self.modbus_unit
                                 )
-                            except Exception as ex:
-                                _LOGGER.exception("Exception writing power for operation_mode Off: %s", ex)
-                                result = ex
-
-                            if hasattr(result, "isError") and result.isError():
-                                _LOGGER.error("Failed to write power state for operation_mode Off: %s", result)
-                            elif isinstance(result, Exception):
-                                _LOGGER.error("Failed to write power state for operation_mode Off (exception): %s", result)
+                                if power_result.isError():
+                                    _LOGGER.error("Failed to turn on power after mode change")
                             else:
-                                _LOGGER.info("operation_mode: turned Off successfully")
-
-                        elif mode_lower in self.mode_values and self.mode_values[mode_lower] is not None:
-                            mode_value = self.mode_values[mode_lower]
-                            _LOGGER.debug("operation_mode: setting mode %s (raw=%s) then power on", params, mode_value)
-                            try:
-                                mode_result = await self._client.write_register(
-                                    address=self.mode_register,
-                                    value=mode_value,
-                                    device_id=self.modbus_unit
-                                )
-                            except Exception as ex:
-                                _LOGGER.exception("Exception writing mode for operation_mode: %s", ex)
-                                mode_result = ex
-
-                            if hasattr(mode_result, "isError") and mode_result.isError():
-                                _LOGGER.error("Failed to set mode %s: %s", params, mode_result)
-                            elif isinstance(mode_result, Exception):
-                                _LOGGER.error("Failed to set mode %s (exception): %s", params, mode_result)
-                            else:
-                                # after successful mode set, set power on
-                                try:
-                                    power_result = await self._client.write_register(
-                                        address=self.power_register,
-                                        value=1,
-                                        device_id=self.modbus_unit
-                                    )
-                                except Exception as ex:
-                                    _LOGGER.exception("Exception turning power on after mode change: %s", ex)
-                                    power_result = ex
-
-                                if hasattr(power_result, "isError") and power_result.isError():
-                                    _LOGGER.error("Failed to turn on power after mode change: %s", power_result)
-                                elif isinstance(power_result, Exception):
-                                    _LOGGER.error("Failed to turn on power after mode change (exception): %s", power_result)
-                                else:
-                                    _LOGGER.info("Successfully set operation_mode = %s", params)
-
+                                _LOGGER.error("Failed to set mode %s", params)
+                        
+                        _LOGGER.debug("Successfully set operation mode = %s", params)
+                            
                 except Exception as err:
-                    _LOGGER.error("Error writing %s: %s\n%s", operation, err, traceback.format_exc())
-
+                    _LOGGER.error("Error writing %s: %s", operation, err)
+            
             # Clear pending writes after processing
             self._pending_writes.clear()
 
     async def write_register(self, operation: str, value: Any) -> bool:
-        """Queue a register write for the next update cycle."""
-        _LOGGER.debug("Queueing write %s = %s", operation, value)
+        """Queue a register write and immediately read back status."""
         self._pending_writes[operation] = value
-
-        # Trigger an immediate update to process the write
-        await self.async_request_refresh()
-
+        
+        # Process the write immediately
+        await self._process_pending_writes()
+        
+        # Immediately read back the relevant registers to update UI
+        try:
+            async with self._lock:
+                if operation == "target_temp":
+                    # Read back target temp after write
+                    result = await self._client.read_holding_registers(
+                        address=self.target_temp_register,
+                        count=1,
+                        device_id=self.modbus_unit
+                    )
+                    if not result.isError() and result.registers:
+                        raw_target = result.registers[0]
+                        self.data["target_temp"] = (raw_target * self.target_temp_scale) + self.target_temp_offset
+                        _LOGGER.debug("Read back target temp: %s", self.data["target_temp"])
+                        
+                elif operation == "power_state":
+                    # Read back power state after write
+                    result = await self._client.read_holding_registers(
+                        address=self.power_register,
+                        count=1,
+                        device_id=self.modbus_unit
+                    )
+                    if not result.isError() and result.registers:
+                        self.data["power_state"] = bool(result.registers[0])
+                        # Update operation based on power state
+                        if not self.data["power_state"]:
+                            self.data["operation"] = "off"
+                        _LOGGER.debug("Read back power state: %s", self.data["power_state"])
+                        
+                elif operation == "mode":
+                    # Read back mode after write
+                    result = await self._client.read_holding_registers(
+                        address=self.mode_register,
+                        count=1,
+                        device_id=self.modbus_unit
+                    )
+                    if not result.isError() and result.registers:
+                        mode_value = result.registers[0]
+                        self.data["mode_value"] = mode_value
+                        self.data["mode"] = self.value_to_mode.get(mode_value, "eco")
+                        if self.data.get("power_state", False):
+                            self.data["operation"] = self.data["mode"]
+                        _LOGGER.debug("Read back mode: %s", self.data["mode"])
+                        
+                elif operation == "operation_mode":
+                    # After setting operation mode, read both power and mode
+                    power_result = await self._client.read_holding_registers(
+                        address=self.power_register,
+                        count=1,
+                        device_id=self.modbus_unit
+                    )
+                    mode_result = await self._client.read_holding_registers(
+                        address=self.mode_register,
+                        count=1,
+                        device_id=self.modbus_unit
+                    )
+                    
+                    if not power_result.isError() and power_result.registers:
+                        self.data["power_state"] = bool(power_result.registers[0])
+                        
+                    if not mode_result.isError() and mode_result.registers:
+                        mode_value = mode_result.registers[0]
+                        self.data["mode_value"] = mode_value
+                        self.data["mode"] = self.value_to_mode.get(mode_value, "eco")
+                        
+                    # Update operation based on combined state
+                    if self.data.get("power_state", False):
+                        self.data["operation"] = self.data.get("mode", "eco")
+                    else:
+                        self.data["operation"] = "off"
+                        
+                    _LOGGER.debug("Read back operation: %s", self.data["operation"])
+            
+            # Notify all listeners that data has been updated
+            self.async_set_updated_data(self.data)
+            
+        except Exception as err:
+            _LOGGER.error("Error reading back after write: %s", err)
+        
         return True
 
     async def async_shutdown(self) -> None:

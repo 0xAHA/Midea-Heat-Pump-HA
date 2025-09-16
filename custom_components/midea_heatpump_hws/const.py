@@ -34,6 +34,14 @@ DEFAULT_TARGET_TEMP = 65
 DEFAULT_MIN_TEMP = 40
 DEFAULT_MAX_TEMP = 75
 
+# Mode Temperature limits
+CONF_ECO_MIN_TEMP = "eco_min_temp"
+CONF_ECO_MAX_TEMP = "eco_max_temp"
+CONF_PERFORMANCE_MIN_TEMP = "performance_min_temp"
+CONF_PERFORMANCE_MAX_TEMP = "performance_max_temp"
+CONF_ELECTRIC_MIN_TEMP = "electric_min_temp"
+CONF_ELECTRIC_MAX_TEMP = "electric_max_temp"
+
 # Configuration keys
 CONF_MODBUS_UNIT = "modbus_unit"
 CONF_SCAN_INTERVAL = "scan_interval"

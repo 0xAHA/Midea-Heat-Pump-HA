@@ -27,20 +27,39 @@ STEP_CONNECTION_DATA_SCHEMA = vol.Schema({
     vol.Required("scan_interval", default=60): int,
 })
 
-# Step 2: Core registers  
-STEP_REGISTERS_DATA_SCHEMA = vol.Schema({
+# Step 2: Control registers (no scaling needed)
+STEP_CONTROL_REGISTERS_SCHEMA = vol.Schema({
     vol.Required("power_register", default=0): int,
     vol.Required("mode_register", default=1): int,
-    vol.Required("temp_register", default=102): int,
-    vol.Required("target_temp_register", default=2): int,
     vol.Required("eco_mode_value", default=1): int,
     vol.Required("performance_mode_value", default=2): int,
     vol.Required("electric_mode_value", default=4): int,
-    vol.Required("temp_offset", default=-15.0): vol.Coerce(float),
-    vol.Required("temp_scale", default=0.5): vol.Coerce(float),
 })
 
-# Step 3: Optional sensors
+# Step 3: Temperature registers with individual scaling
+STEP_TEMP_REGISTERS_SCHEMA = vol.Schema({
+    vol.Required("temp_register", default=102): int,
+    vol.Required("temp_offset", default=-15.0): vol.Coerce(float),
+    vol.Required("temp_scale", default=0.5): vol.Coerce(float),
+    vol.Required("target_temp_register", default=2): int,
+    vol.Required("target_temp_offset", default=0.0): vol.Coerce(float),
+    vol.Required("target_temp_scale", default=1.0): vol.Coerce(float),
+})
+
+# Step 4: Temperature limits by mode
+STEP_TEMP_LIMITS_SCHEMA = vol.Schema({
+    # Eco mode limits
+    vol.Required("eco_min_temp", default=60): vol.All(int, vol.Range(min=40, max=80)),
+    vol.Required("eco_max_temp", default=65): vol.All(int, vol.Range(min=40, max=80)),
+    # Performance mode limits
+    vol.Required("performance_min_temp", default=60): vol.All(int, vol.Range(min=40, max=80)),
+    vol.Required("performance_max_temp", default=70): vol.All(int, vol.Range(min=40, max=80)),
+    # Electric mode limits
+    vol.Required("electric_min_temp", default=60): vol.All(int, vol.Range(min=40, max=80)),
+    vol.Required("electric_max_temp", default=70): vol.All(int, vol.Range(min=40, max=80)),
+})
+
+# Step 5: Optional sensors with shared scaling
 STEP_SENSORS_DATA_SCHEMA = vol.Schema({
     vol.Optional("tank_top_temp_register", default=101): int,
     vol.Optional("tank_bottom_temp_register", default=102): int,
@@ -49,14 +68,14 @@ STEP_SENSORS_DATA_SCHEMA = vol.Schema({
     vol.Optional("exhaust_temp_register", default=105): int,
     vol.Optional("suction_temp_register", default=106): int,
     vol.Optional("enable_additional_sensors", default=True): bool,
+    vol.Optional("sensors_temp_offset", default=-15.0): vol.Coerce(float),
+    vol.Optional("sensors_temp_scale", default=0.5): vol.Coerce(float),
 })
 
-# Final settings
+# Step 6: Final settings
 STEP_FINAL_DATA_SCHEMA = vol.Schema({
     vol.Required(CONF_NAME, default="Hot Water System"): str,
     vol.Required("target_temperature", default=65): int,
-    vol.Required("min_temp", default=40): int,
-    vol.Required("max_temp", default=75): int,
 })
 
 
@@ -66,7 +85,7 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
     # Skip validation if requested
     if data.get("skip_validation", False):
         _LOGGER.info("Skipping connection validation as requested")
-        return {"title": f"Midea Heat Pump ({data[CONF_HOST]}) - Offline Setup"}
+        return {"title": f"Midea Heat Pump ({data[CONF_HOST]})"}
     
     client = None
     max_retries = 3
@@ -169,7 +188,7 @@ class MideaHeatPumpConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # info = await validate_connection(self.hass, user_input)
             
             # Use fake validation result for offline testing
-            info = {"title": f"Midea Heat Pump ({user_input[CONF_HOST]}) - Offline Setup"}
+            info = {"title": f"Midea Heat Pump ({user_input[CONF_HOST]})"}
             
         except Exception as ex:
             _LOGGER.exception("Unexpected exception: %s", ex)
@@ -192,14 +211,48 @@ class MideaHeatPumpConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_registers(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle the second step - register configuration."""
+        """Handle the second step - control register configuration."""
         if user_input is None:
             return self.async_show_form(
                 step_id="registers",
-                data_schema=STEP_REGISTERS_DATA_SCHEMA,
+                data_schema=STEP_CONTROL_REGISTERS_SCHEMA,
                 description_placeholders={
-                    "title": "Register Configuration",
-                    "description": "Configure Modbus register addresses and mode values"
+                    "title": "Control Register Configuration",
+                    "description": "Configure power and mode register addresses (no scaling needed)"
+                },
+            )
+
+        self.data.update(user_input)
+        return await self.async_step_temp_registers()
+
+    async def async_step_temp_registers(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle temperature register configuration with scaling."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="temp_registers",
+                data_schema=STEP_TEMP_REGISTERS_SCHEMA,
+                description_placeholders={
+                    "title": "Temperature Register Configuration",
+                    "description": "Configure temperature registers with individual offset and scale values"
+                },
+            )
+
+        self.data.update(user_input)
+        return await self.async_step_temp_limits()
+
+    async def async_step_temp_limits(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle temperature limits by mode configuration."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="temp_limits",
+                data_schema=STEP_TEMP_LIMITS_SCHEMA,
+                description_placeholders={
+                    "title": "Temperature Limits by Mode",
+                    "description": "Configure min/max temperatures for each operation mode"
                 },
             )
 
@@ -209,14 +262,14 @@ class MideaHeatPumpConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_sensors(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle the third step - optional sensor configuration."""
+        """Handle the optional sensor configuration."""
         if user_input is None:
             return self.async_show_form(
                 step_id="sensors",
                 data_schema=STEP_SENSORS_DATA_SCHEMA,
                 description_placeholders={
                     "title": "Optional Sensors",
-                    "description": "Configure additional temperature sensors as attributes"
+                    "description": "Configure additional temperature sensors with shared scaling"
                 },
             )
 
@@ -233,7 +286,7 @@ class MideaHeatPumpConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 data_schema=STEP_FINAL_DATA_SCHEMA,
                 description_placeholders={
                     "title": "Entity Settings",
-                    "description": "Configure entity name and temperature limits"
+                    "description": "Configure entity name and default temperature"
                 },
             )
 
@@ -263,7 +316,7 @@ class MideaHeatPumpOptionsFlow(config_entries.OptionsFlow):
         """Manage the options - show menu."""
         return self.async_show_menu(
             step_id="init",
-            menu_options=["connection", "control_registers", "temp_registers", "sensors", "settings"]
+            menu_options=["connection", "control_registers", "temp_registers", "temp_limits", "sensors", "settings"]
         )
 
     async def async_step_connection(
@@ -340,6 +393,43 @@ class MideaHeatPumpOptionsFlow(config_entries.OptionsFlow):
             },
         )
 
+    async def async_step_temp_limits(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Update temperature limits by mode."""
+        if user_input is not None:
+            self.data.update(user_input)
+            return await self._update_and_reload()
+
+        current_data = self.config_entry.data
+        return self.async_show_form(
+            step_id="temp_limits",
+            data_schema=vol.Schema({
+                vol.Required("eco_min_temp", default=current_data.get("eco_min_temp", 60)): vol.All(
+                    int, vol.Range(min=40, max=80)
+                ),
+                vol.Required("eco_max_temp", default=current_data.get("eco_max_temp", 65)): vol.All(
+                    int, vol.Range(min=40, max=80)
+                ),
+                vol.Required("performance_min_temp", default=current_data.get("performance_min_temp", 60)): vol.All(
+                    int, vol.Range(min=40, max=80)
+                ),
+                vol.Required("performance_max_temp", default=current_data.get("performance_max_temp", 70)): vol.All(
+                    int, vol.Range(min=40, max=80)
+                ),
+                vol.Required("electric_min_temp", default=current_data.get("electric_min_temp", 60)): vol.All(
+                    int, vol.Range(min=40, max=80)
+                ),
+                vol.Required("electric_max_temp", default=current_data.get("electric_max_temp", 70)): vol.All(
+                    int, vol.Range(min=40, max=80)
+                ),
+            }),
+            description_placeholders={
+                "title": "Update Temperature Limits",
+                "description": "Configure min/max temperatures for each operation mode"
+            },
+        )
+
     async def async_step_sensors(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
@@ -384,12 +474,10 @@ class MideaHeatPumpOptionsFlow(config_entries.OptionsFlow):
                 vol.Required("target_temperature", default=current_data.get("target_temperature", 65)): vol.All(
                     int, vol.Range(min=40, max=75)
                 ),
-                vol.Required("min_temp", default=current_data.get("min_temp", 60)): int,
-                vol.Required("max_temp", default=current_data.get("max_temp", 75)): int,
             }),
             description_placeholders={
                 "title": "Update Entity Settings",
-                "description": "Modify temperature limits and entity name"
+                "description": "Modify entity name and default temperature"
             },
         )
 

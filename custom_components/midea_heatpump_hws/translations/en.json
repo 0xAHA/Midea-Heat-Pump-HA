@@ -23,24 +23,16 @@
         "data": {
           "power_register": "Power Register",
           "mode_register": "Mode Register",
-          "temp_register": "Current Temperature Register",
-          "target_temp_register": "Target Temperature Register",
           "eco_mode_value": "Eco Mode Value",
           "performance_mode_value": "Performance Mode Value",
-          "electric_mode_value": "Electric Mode Value",
-          "temp_offset": "Sensors Temperature Offset",
-          "temp_scale": "Sensors Temperature Scale"
+          "electric_mode_value": "Electric Mode Value"
         },
         "data_description": {
           "power_register": "Register address for on/off control (default: 0)",
           "mode_register": "Register address for operation mode (default: 1)",
-          "temp_register": "Register address for Current Temperature",
-          "target_temp_register": "Register for target temperature (default: 2)",
           "eco_mode_value": "Value to write for Eco mode (default: 1)",
           "performance_mode_value": "Value to write for Performance mode (default: 2)",
-          "electric_mode_value": "Value to write for Electric mode (default: 4)",
-          "temp_offset": "Sensors Temperature Offset",
-          "temp_scale": "Sensors Temperature Scale"
+          "electric_mode_value": "Value to write for Electric mode (default: 4)"
         }
       },
       "temp_registers": {
@@ -61,6 +53,26 @@
           "target_temp_register": "Register for target temperature (default: 2)",
           "target_temp_offset": "Target temp offset (usually 0.0)",
           "target_temp_scale": "Target temp scale (usually 1.0)"
+        }
+      },
+      "temp_limits": {
+        "title": "Temperature Limits by Mode",
+        "description": "Configure minimum and maximum temperatures for each operation mode",
+        "data": {
+          "eco_min_temp": "Eco Mode - Minimum Temperature",
+          "eco_max_temp": "Eco Mode - Maximum Temperature",
+          "performance_min_temp": "Performance Mode - Minimum Temperature",
+          "performance_max_temp": "Performance Mode - Maximum Temperature",
+          "electric_min_temp": "Electric Mode - Minimum Temperature",
+          "electric_max_temp": "Electric Mode - Maximum Temperature"
+        },
+        "data_description": {
+          "eco_min_temp": "Minimum temperature for Eco mode (default: 60°C)",
+          "eco_max_temp": "Maximum temperature for Eco mode (default: 65°C)",
+          "performance_min_temp": "Minimum temperature for Performance mode (default: 60°C)",
+          "performance_max_temp": "Maximum temperature for Performance mode (default: 70°C)",
+          "electric_min_temp": "Minimum temperature for Electric mode (default: 60°C)",
+          "electric_max_temp": "Maximum temperature for Electric mode (default: 70°C)"
         }
       },
       "sensors": {
@@ -94,15 +106,11 @@
         "description": "Configure the water heater entity",
         "data": {
           "name": "Name",
-          "target_temperature": "Default Target Temperature",
-          "min_temp": "Minimum Temperature",
-          "max_temp": "Maximum Temperature"
+          "target_temperature": "Default Target Temperature"
         },
         "data_description": {
           "name": "Friendly name for your water heater",
-          "target_temperature": "Initial target temperature in °C",
-          "min_temp": "Minimum settable temperature",
-          "max_temp": "Maximum settable temperature"
+          "target_temperature": "Initial target temperature in °C"
         }
       }
     },
@@ -122,6 +130,7 @@
           "connection": "Connection Settings",
           "control_registers": "Control Registers",
           "temp_registers": "Temperature Registers",
+          "temp_limits": "Temperature Limits",
           "sensors": "Additional Sensors",
           "settings": "Entity Settings"
         }
@@ -180,6 +189,26 @@
           "target_temp_scale": "Target temperature scale"
         }
       },
+      "temp_limits": {
+        "title": "Update Temperature Limits",
+        "description": "Modify temperature limits for each operation mode",
+        "data": {
+          "eco_min_temp": "Eco Mode - Minimum Temperature",
+          "eco_max_temp": "Eco Mode - Maximum Temperature",
+          "performance_min_temp": "Performance Mode - Minimum Temperature",
+          "performance_max_temp": "Performance Mode - Maximum Temperature",
+          "electric_min_temp": "Electric Mode - Minimum Temperature",
+          "electric_max_temp": "Electric Mode - Maximum Temperature"
+        },
+        "data_description": {
+          "eco_min_temp": "Minimum temperature for Eco mode",
+          "eco_max_temp": "Maximum temperature for Eco mode",
+          "performance_min_temp": "Minimum temperature for Performance mode",
+          "performance_max_temp": "Maximum temperature for Performance mode",
+          "electric_min_temp": "Minimum temperature for Electric mode",
+          "electric_max_temp": "Maximum temperature for Electric mode"
+        }
+      },
       "sensors": {
         "title": "Update Additional Sensors",
         "description": "Modify optional sensor configuration",
@@ -211,15 +240,11 @@
         "description": "Modify water heater entity configuration",
         "data": {
           "name": "Name",
-          "target_temperature": "Default Target Temperature",
-          "min_temp": "Minimum Temperature",
-          "max_temp": "Maximum Temperature"
+          "target_temperature": "Default Target Temperature"
         },
         "data_description": {
           "name": "Friendly name for your water heater",
-          "target_temperature": "Default target temperature",
-          "min_temp": "Minimum settable temperature",
-          "max_temp": "Maximum settable temperature"
+          "target_temperature": "Default target temperature"
         }
       }
     }
