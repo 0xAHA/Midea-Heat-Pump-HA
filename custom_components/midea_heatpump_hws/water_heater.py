@@ -20,8 +20,6 @@ from .const import (
     DOMAIN,
     CONF_MODBUS_UNIT,
     CONF_TARGET_TEMP,
-    CONF_MIN_TEMP,
-    CONF_MAX_TEMP,
     CONF_ENABLE_ADDITIONAL_SENSORS,
 )
 from .coordinator import MideaModbusCoordinator
@@ -73,10 +71,28 @@ class MideaWaterHeater(CoordinatorEntity, WaterHeaterEntity, RestoreEntity):
             WaterHeaterEntityFeature.OPERATION_MODE
         )
 
-        # Temperature settings
-        self._target_temperature = config[CONF_TARGET_TEMP]
-        self._min_temp = config[CONF_MIN_TEMP]
-        self._max_temp = config[CONF_MAX_TEMP]
+        # Temperature settings - mode specific
+        self._target_temperature = config.get(CONF_TARGET_TEMP, 65)
+        
+        # Store mode-specific limits
+        self._mode_limits = {
+            "eco": {
+                "min": config.get("eco_min_temp", 60),
+                "max": config.get("eco_max_temp", 65)
+            },
+            "performance": {
+                "min": config.get("performance_min_temp", 60),
+                "max": config.get("performance_max_temp", 70)
+            },
+            "electric": {
+                "min": config.get("electric_min_temp", 60),
+                "max": config.get("electric_max_temp", 70)
+            },
+            "off": {
+                "min": 40,
+                "max": 75
+            }
+        }
 
         # Optional sensors
         self._enable_additional_sensors = options.get(
@@ -135,22 +151,24 @@ class MideaWaterHeater(CoordinatorEntity, WaterHeaterEntity, RestoreEntity):
 
     @property
     def min_temp(self):
-        """Return the minimum targetable temperature."""
-        return self._min_temp
+        """Return the minimum temperature based on current mode."""
+        current_mode = self.current_operation
+        return self._mode_limits.get(current_mode, self._mode_limits["off"])["min"]
 
     @property
     def max_temp(self):
-        """Return the maximum targetable temperature."""
-        return self._max_temp
+        """Return the maximum temperature based on current mode."""
+        current_mode = self.current_operation
+        return self._mode_limits.get(current_mode, self._mode_limits["off"])["max"]
 
     @property
     def icon(self):
         """Return the icon for the current operation mode."""
         mode_icons = {
-            "off": "mdi:power-off",
-            "eco": "mdi:leaf",
-            "performance": "mdi:speedometer",
-            "electric": "mdi:lightning-bolt"
+            "Off": "mdi:power-off",
+            "Eco": "mdi:leaf",
+            "Performance": "mdi:speedometer",
+            "Electric": "mdi:lightning-bolt"
         }
         current_op = self.current_operation
         return mode_icons.get(current_op, "mdi:water-boiler")
@@ -164,8 +182,18 @@ class MideaWaterHeater(CoordinatorEntity, WaterHeaterEntity, RestoreEntity):
     def extra_state_attributes(self):
         """Return additional state attributes."""
         attributes = {}
+        
+        # Add mode-specific temperature limits to attributes
+        current_mode = self.current_operation
+        attributes["temperature_limits"] = {
+            "current_mode": current_mode,
+            "min_temp": self.min_temp,
+            "max_temp": self.max_temp,
+            "all_modes": self._mode_limits
+        }
+        
+        # Add additional sensor temperatures if enabled
         if self._enable_additional_sensors and self.coordinator.data:
-            # Add temperature sensors from coordinator data
             sensor_names = [
                 "tank_top_temp",
                 "tank_bottom_temp",
@@ -179,6 +207,7 @@ class MideaWaterHeater(CoordinatorEntity, WaterHeaterEntity, RestoreEntity):
                     # Add temperature unit to the attribute name for clarity
                     attr_name = f"{sensor_name}_{self.temperature_unit}"
                     attributes[attr_name] = self.coordinator.data[sensor_name]
+                    
         return attributes
 
     async def async_added_to_hass(self):
@@ -196,11 +225,36 @@ class MideaWaterHeater(CoordinatorEntity, WaterHeaterEntity, RestoreEntity):
         temperature = kwargs.get(ATTR_TEMPERATURE)
         if temperature is None:
             return
+        
+        # Validate temperature is within current mode's limits
+        if temperature < self.min_temp or temperature > self.max_temp:
+            _LOGGER.warning(
+                "Temperature %s is outside allowed range (%s-%s) for %s mode",
+                temperature, self.min_temp, self.max_temp, self.current_operation
+            )
+            # Clamp to valid range
+            temperature = max(self.min_temp, min(temperature, self.max_temp))
 
         await self.coordinator.write_register("target_temp", temperature)
 
     async def async_set_operation_mode(self, operation_mode):
         """Set new operation mode."""
+        # Check if target temperature needs adjustment for new mode
+        if operation_mode in self._mode_limits:
+            mode_limits = self._mode_limits[operation_mode]
+            current_target = self.target_temperature
+            
+            if current_target and (current_target < mode_limits["min"] or current_target > mode_limits["max"]):
+                # Adjust target to be within new mode's limits
+                new_target = max(mode_limits["min"], min(current_target, mode_limits["max"]))
+                _LOGGER.info(
+                    "Adjusting target temperature from %s to %s for %s mode",
+                    current_target, new_target, operation_mode
+                )
+                # Write the adjusted target temperature first
+                await self.coordinator.write_register("target_temp", new_target)
+        
+        # Then change the operation mode
         await self.coordinator.write_register("operation_mode", operation_mode)
 
     @callback
