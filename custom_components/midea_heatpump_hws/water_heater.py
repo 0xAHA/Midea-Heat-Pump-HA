@@ -64,8 +64,18 @@ class MideaWaterHeater(CoordinatorEntity, WaterHeaterEntity, RestoreEntity):
         self._entry_id = entry_id
         
         # Entity attributes
-        self._attr_name = config.get(CONF_NAME, "Midea Heat Pump")
+        base_name = config.get(CONF_NAME, "Midea Heat Pump")
+    
+        # Check if we need to make the name unique
+        # Include host in the name to differentiate multiple devices
+        if config.get('host'):
+            self._attr_name = f"{base_name} ({config['host']})"
+        else:
+            self._attr_name = base_name
+        
+        # Unique ID should prevent duplicates in the registry
         self._attr_unique_id = f"midea_{config['host']}_{config[CONF_MODBUS_UNIT]}"
+        
         self._attr_supported_features = (
             WaterHeaterEntityFeature.TARGET_TEMPERATURE |
             WaterHeaterEntityFeature.OPERATION_MODE

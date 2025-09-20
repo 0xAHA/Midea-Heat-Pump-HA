@@ -15,6 +15,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
 import homeassistant.helpers.config_validation as cv
 
+from .profile_manager import ProfileManager
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -76,6 +77,25 @@ STEP_SENSORS_DATA_SCHEMA = vol.Schema({
 STEP_FINAL_DATA_SCHEMA = vol.Schema({
     vol.Required(CONF_NAME, default="Hot Water System"): str,
     vol.Required("target_temperature", default=65): int,
+})
+
+STEP_SETUP_METHOD_SCHEMA = vol.Schema({
+    vol.Required("setup_method", default="manual"): vol.In({
+        "profile": "Load from Profile",
+        "manual": "Manual Configuration"
+    })
+})
+
+STEP_PROFILE_SELECT_SCHEMA = lambda profiles: vol.Schema({
+    vol.Required("profile"): vol.In(profiles),
+    vol.Required(CONF_HOST): str,
+    vol.Optional(CONF_NAME, default="Hot Water System"): str,
+})
+
+STEP_SAVE_PROFILE_SCHEMA = vol.Schema({
+    vol.Required("save_profile", default=False): bool,
+    vol.Optional("profile_name", default=""): str,
+    vol.Optional("model_number", default=""): str,
 })
 
 
@@ -159,6 +179,8 @@ class MideaHeatPumpConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def __init__(self):
         """Initialize config flow."""
         self.data = {}
+        self.profile_manager = None
+        self.selected_profile = None
 
     @staticmethod
     @callback
@@ -173,33 +195,106 @@ class MideaHeatPumpConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is None:
             return self.async_show_form(
                 step_id="user",
+                data_schema=STEP_SETUP_METHOD_SCHEMA,
+                description_placeholders={
+                    "title": "Setup Method",
+                    "description": "Choose how to configure your water heater"
+                },
+            )
+        
+        self.profile_manager = ProfileManager(self.hass)
+    
+        if user_input["setup_method"] == "profile":
+            return await self.async_step_load_profile()
+        else:
+            return await self.async_step_connection()
+
+    async def async_step_load_profile(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Load configuration from a profile."""
+        if user_input is None:
+            # Get available profiles
+            profiles = self.profile_manager.get_available_profiles()
+            
+            if not profiles:
+                # No profiles available, go to manual setup
+                return await self.async_step_connection()
+            
+            # Create display names for profiles
+            profile_options = {}
+            for profile_id, profile_info in profiles.items():
+                display_name = f"{profile_info['name']} ({profile_info['model']}) - {profile_info['type']}"
+                profile_options[profile_id] = display_name
+            
+            return self.async_show_form(
+                step_id="load_profile",
+                data_schema=STEP_PROFILE_SELECT_SCHEMA(profile_options),
+                description_placeholders={
+                    "title": "Select Profile",
+                    "description": "Choose a profile and enter your connection details"
+                },
+            )
+        
+        # Load the selected profile
+        profile_data = self.profile_manager.load_profile(user_input["profile"])
+        if profile_data:
+            # Apply profile to configuration
+            self.data = self.profile_manager.apply_profile_to_config(profile_data, user_input)
+            self.data[CONF_HOST] = user_input[CONF_HOST]
+            self.data[CONF_NAME] = user_input.get(CONF_NAME, profile_data.get("name", "Hot Water System"))
+            
+            # Skip to validation
+            try:
+                info = await validate_connection(self.hass, self.data)
+                self.data["title"] = info["title"]
+                
+                # Check if already configured
+                await self.async_set_unique_id(f"{self.data[CONF_HOST]}_{self.data['modbus_unit']}")
+                self._abort_if_unique_id_configured()
+                
+                return self.async_create_entry(
+                    title=self.data["title"],
+                    data=self.data,
+                )
+            except Exception as ex:
+                _LOGGER.error("Connection validation failed: %s", ex)
+                # Go to manual setup if profile load fails
+                return await self.async_step_connection()
+        
+        # Profile load failed, go to manual setup
+        return await self.async_step_connection()
+
+    async def async_step_connection(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle connection settings - now Step 1 of manual setup."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="connection",
                 data_schema=STEP_CONNECTION_DATA_SCHEMA,
                 description_placeholders={
                     "title": "Modbus Connection Settings",
                     "description": "Configure the TCP connection to your EW11-A adapter"
                 },
             )
-
+        
         errors = {}
-
-        # TEMPORARILY BYPASS VALIDATION FOR TESTING
+        
         try:
-            # Comment out the actual validation for testing
-            # info = await validate_connection(self.hass, user_input)
+            # Validate connection
+            info = await validate_connection(self.hass, user_input)
             
-            # Use fake validation result for offline testing
-            info = {"title": f"Midea Heat Pump ({user_input[CONF_HOST]})"}
+            self.data.update(user_input)
+            self.data["title"] = info["title"]
+            return await self.async_step_registers()
             
         except Exception as ex:
             _LOGGER.exception("Unexpected exception: %s", ex)
             errors["base"] = "cannot_connect"
-        else:
-            self.data.update(user_input)
-            self.data["title"] = info["title"]
-            return await self.async_step_registers()
-
+        
         return self.async_show_form(
-            step_id="user",
+            step_id="connection",
             data_schema=STEP_CONNECTION_DATA_SCHEMA,
             errors=errors,
             description_placeholders={
@@ -286,16 +381,44 @@ class MideaHeatPumpConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 data_schema=STEP_FINAL_DATA_SCHEMA,
                 description_placeholders={
                     "title": "Entity Settings",
-                    "description": "Configure entity name and default temperature"
+                    "description": "Configure the water heater entity"
                 },
             )
 
         self.data.update(user_input)
+        
+        # Ask if user wants to save as profile
+        return await self.async_step_save_profile()
 
+    async def async_step_save_profile(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Ask if user wants to save configuration as a profile."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="save_profile",
+                data_schema=STEP_SAVE_PROFILE_SCHEMA,
+                description_placeholders={
+                    "title": "Save as Profile?",
+                    "description": "Optionally save this configuration as a reusable profile"
+                },
+            )
+        
+        if user_input.get("save_profile") and user_input.get("profile_name"):
+            # Save the profile
+            if not self.profile_manager:
+                self.profile_manager = ProfileManager(self.hass)
+            
+            self.profile_manager.save_profile(
+                name=user_input["profile_name"],
+                config=self.data,
+                model=user_input.get("model_number", "Custom")
+            )
+        
         # Check if already configured
         await self.async_set_unique_id(f"{self.data[CONF_HOST]}_{self.data['modbus_unit']}")
         self._abort_if_unique_id_configured()
-
+        
         return self.async_create_entry(
             title=self.data["title"],
             data=self.data,
@@ -316,7 +439,51 @@ class MideaHeatPumpOptionsFlow(config_entries.OptionsFlow):
         """Manage the options - show menu."""
         return self.async_show_menu(
             step_id="init",
-            menu_options=["connection", "control_registers", "temp_registers", "temp_limits", "sensors", "settings"]
+            menu_options=[
+                "connection",
+                "control_registers",
+                "temp_registers",
+                "temp_limits",
+                "sensors",
+                "settings",
+                "save_as_profile"  # New option
+            ]
+        )
+
+    async def async_step_save_as_profile(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Save current configuration as a profile."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="save_as_profile",
+                data_schema=vol.Schema({
+                    vol.Required("profile_name"): str,
+                    vol.Optional("model_number", default=""): str,
+                    vol.Optional("description", default=""): str,
+                }),
+                description_placeholders={
+                    "title": "Save Configuration as Profile",
+                    "description": "Save your current settings as a reusable profile"
+                },
+            )
+        
+        # Save the profile
+        profile_manager = ProfileManager(self.hass)
+        saved_path = profile_manager.save_profile(
+            name=user_input["profile_name"],
+            config=self.config_entry.data,
+            model=user_input.get("model_number", "Custom")
+        )
+        
+        # Show success message
+        return self.async_create_entry(
+            title="",
+            data={},
+            description_placeholders={
+                "title": "Profile Saved",
+                "description": f"Profile saved successfully: {user_input['profile_name']}"
+            }
         )
 
     async def async_step_connection(
