@@ -23,8 +23,11 @@ async def async_setup_entry(
     coordinator = hass.data[DOMAIN][config_entry.entry_id]["coordinator"]
     config = hass.data[DOMAIN][config_entry.entry_id]["config"]
     
+    # Include host in entity name to make it unique
+    host_suffix = f" ({config['host']})"
+    
     # Only create power switch
-    entities = [MideaPowerSwitch(coordinator, config)]
+    entities = [MideaPowerSwitch(coordinator, config, host_suffix)]
     async_add_entities(entities)
 
 
@@ -34,14 +37,15 @@ class MideaPowerSwitch(CoordinatorEntity, SwitchEntity):
     def __init__(
         self,
         coordinator: MideaModbusCoordinator,
-        config: dict
+        config: dict,
+        host_suffix: str
     ):
         """Initialize the power switch."""
         super().__init__(coordinator)
         self._config = config
         
-        # Entity attributes
-        self._attr_name = "Power"
+        # Entity attributes - include host for uniqueness
+        self._attr_name = f"Power{host_suffix}"
         self._attr_unique_id = f"midea_{config['host']}_{config[CONF_MODBUS_UNIT]}_power"
         self._attr_icon = "mdi:power"
 
@@ -51,7 +55,7 @@ class MideaPowerSwitch(CoordinatorEntity, SwitchEntity):
         return {
             "identifiers": {(DOMAIN, f"{self._config['host']}_{self._config[CONF_MODBUS_UNIT]}")},
             "name": f"Midea Heat Pump ({self._config['host']})",
-            "manufacturer": "0xAHA",
+            "manufacturer": "Midea",
             "model": "Heat Pump Water Heater",
         }
 

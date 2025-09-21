@@ -19,3 +19,43 @@ set_operation_mode:
     operation_mode:
       description: New value of operation mode.
       example: "on"
+
+export_profile:
+  name: Export Profile
+  description: Export water heater configuration as a reusable profile
+  fields:
+    entry_id:
+      name: Config Entry ID
+      description: ID of the configuration entry to export (optional, uses first if not specified)
+      required: false
+      example: "01K53MWD9DFJ4E731T8G6YT4M0"
+      selector:
+        text:
+    name:
+      name: Profile Name
+      description: Name for the exported profile
+      required: false
+      default: "My Profile"
+      example: "My 170L Config"
+      selector:
+        text:
+    model:
+      name: Model Number
+      description: Water heater model this profile is for
+      required: false
+      default: "Custom"
+      example: "HP170"
+      selector:
+        text:
+
+import_profile:
+  name: Import Profile
+  description: Import a profile from JSON
+  fields:
+    profile_json:
+      name: Profile JSON
+      description: The JSON content of the profile to import
+      required: true
+      selector:
+        text:
+          multiline: true

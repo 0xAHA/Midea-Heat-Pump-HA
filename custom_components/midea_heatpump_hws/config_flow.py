@@ -221,7 +221,7 @@ class MideaHeatPumpConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 # No profiles available, go to manual setup
                 return await self.async_step_connection()
             
-            # Create display names for profiles
+            # Create display names for profiles - SIMPLE VERSION
             profile_options = {}
             for profile_id, profile_info in profiles.items():
                 display_name = f"{profile_info['name']} ({profile_info['model']}) - {profile_info['type']}"
@@ -229,14 +229,18 @@ class MideaHeatPumpConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             
             return self.async_show_form(
                 step_id="load_profile",
-                data_schema=STEP_PROFILE_SELECT_SCHEMA(profile_options),
+                data_schema=vol.Schema({
+                    vol.Required("profile"): vol.In(profile_options),
+                    vol.Required(CONF_HOST): str,
+                    vol.Optional(CONF_NAME, default="Hot Water System"): str,
+                }),
                 description_placeholders={
                     "title": "Select Profile",
                     "description": "Choose a profile and enter your connection details"
                 },
             )
         
-        # Load the selected profile
+        # Load the selected profile - SIMPLE VERSION
         profile_data = self.profile_manager.load_profile(user_input["profile"])
         if profile_data:
             # Apply profile to configuration
