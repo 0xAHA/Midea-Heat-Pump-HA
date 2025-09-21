@@ -2,6 +2,30 @@
   "config": {
     "step": {
       "user": {
+        "title": "Setup Method",
+        "description": "Choose how to configure your water heater",
+        "data": {
+          "setup_method": "Configuration Method"
+        },
+        "data_description": {
+          "setup_method": "Load from a pre-configured profile or configure manually"
+        }
+      },
+      "load_profile": {
+        "title": "Select Profile",
+        "description": "Choose a device profile and enter your connection details",
+        "data": {
+          "profile": "Device Profile",
+          "host": "Host",
+          "name": "Name"
+        },
+        "data_description": {
+          "profile": "Pre-configured settings for your water heater model",
+          "host": "IP address of your RS485-WiFi adapter",
+          "name": "Friendly name for your water heater"
+        }
+      },
+      "connection": {
         "title": "Modbus Connection",
         "description": "Configure the connection to your RS485-WiFi adapter",
         "data": {
@@ -17,109 +41,20 @@
           "scan_interval": "How often to poll for updates (60-300 recommended)"
         }
       },
-      "registers": {
-        "title": "Control Registers",
-        "description": "Configure power and mode control registers",
+      "save_profile": {
+        "title": "Save as Profile?",
+        "description": "Optionally save this configuration as a reusable profile for easy setup or sharing",
         "data": {
-          "power_register": "Power Register",
-          "mode_register": "Mode Register",
-          "eco_mode_value": "Eco Mode Value",
-          "performance_mode_value": "Performance Mode Value",
-          "electric_mode_value": "Electric Mode Value"
+          "save_profile": "Save Configuration as Profile",
+          "profile_name": "Profile Name",
+          "model_number": "Model Number"
         },
         "data_description": {
-          "power_register": "Register address for on/off control (default: 0)",
-          "mode_register": "Register address for operation mode (default: 1)",
-          "eco_mode_value": "Value to write for Eco mode (default: 1)",
-          "performance_mode_value": "Value to write for Performance mode (default: 2)",
-          "electric_mode_value": "Value to write for Electric mode (default: 4)"
-        }
-      },
-      "temp_registers": {
-        "title": "Temperature Registers",
-        "description": "Configure temperature registers with scaling factors",
-        "data": {
-          "temp_register": "Current Temperature Register",
-          "temp_offset": "Current Temperature Offset",
-          "temp_scale": "Current Temperature Scale",
-          "target_temp_register": "Target Temperature Register",
-          "target_temp_offset": "Target Temperature Offset",
-          "target_temp_scale": "Target Temperature Scale"
-        },
-        "data_description": {
-          "temp_register": "Register for reading current water temperature (default: 102)",
-          "temp_offset": "Offset to add after scaling (default: -15.0)",
-          "temp_scale": "Scale factor to multiply raw value (default: 0.5)",
-          "target_temp_register": "Register for target temperature (default: 2)",
-          "target_temp_offset": "Target temp offset (usually 0.0)",
-          "target_temp_scale": "Target temp scale (usually 1.0)"
-        }
-      },
-      "temp_limits": {
-        "title": "Temperature Limits by Mode",
-        "description": "Configure minimum and maximum temperatures for each operation mode",
-        "data": {
-          "eco_min_temp": "Eco Mode - Minimum Temperature",
-          "eco_max_temp": "Eco Mode - Maximum Temperature",
-          "performance_min_temp": "Performance Mode - Minimum Temperature",
-          "performance_max_temp": "Performance Mode - Maximum Temperature",
-          "electric_min_temp": "Electric Mode - Minimum Temperature",
-          "electric_max_temp": "Electric Mode - Maximum Temperature"
-        },
-        "data_description": {
-          "eco_min_temp": "Minimum temperature for Eco mode (default: 60°C)",
-          "eco_max_temp": "Maximum temperature for Eco mode (default: 65°C)",
-          "performance_min_temp": "Minimum temperature for Performance mode (default: 60°C)",
-          "performance_max_temp": "Maximum temperature for Performance mode (default: 70°C)",
-          "electric_min_temp": "Minimum temperature for Electric mode (default: 60°C)",
-          "electric_max_temp": "Maximum temperature for Electric mode (default: 70°C)"
-        }
-      },
-      "sensors": {
-        "title": "Additional Sensors",
-        "description": "Configure optional temperature sensors",
-        "data": {
-          "tank_top_temp_register": "Tank Top Temperature Register",
-          "tank_bottom_temp_register": "Tank Bottom Temperature Register",
-          "condensor_temp_register": "Condensor Temperature Register",
-          "outdoor_temp_register": "Outdoor Temperature Register",
-          "exhaust_temp_register": "Exhaust Gas Temperature Register",
-          "suction_temp_register": "Suction Temperature Register",
-          "enable_additional_sensors": "Enable Additional Sensors",
-          "sensors_temp_offset": "Sensors Temperature Offset",
-          "sensors_temp_scale": "Sensors Temperature Scale"
-        },
-        "data_description": {
-          "tank_top_temp_register": "T5U sensor (default: 101)",
-          "tank_bottom_temp_register": "T5L sensor (default: 102)",
-          "condensor_temp_register": "T3 sensor (default: 103)",
-          "outdoor_temp_register": "T4 sensor (default: 104)",
-          "exhaust_temp_register": "Tp sensor - no scaling applied (default: 105)",
-          "suction_temp_register": "Th sensor (default: 106)",
-          "enable_additional_sensors": "Create sensor entities for additional temperatures",
-          "sensors_temp_offset": "Shared offset for all sensors except exhaust (default: -15.0)",
-          "sensors_temp_scale": "Shared scale for all sensors except exhaust (default: 0.5)"
-        }
-      },
-      "final": {
-        "title": "Entity Settings",
-        "description": "Configure the water heater entity",
-        "data": {
-          "name": "Name",
-          "target_temperature": "Default Target Temperature"
-        },
-        "data_description": {
-          "name": "Friendly name for your water heater",
-          "target_temperature": "Initial target temperature in °C"
+          "save_profile": "Enable to save your settings as a profile",
+          "profile_name": "Name for your profile (e.g., 'My 170L Config')",
+          "model_number": "Your water heater model (e.g., 'HP170')"
         }
       }
-    },
-    "error": {
-      "cannot_connect": "Failed to connect to Modbus device",
-      "unknown": "Unexpected error occurred"
-    },
-    "abort": {
-      "already_configured": "Device is already configured"
     }
   },
   "options": {
@@ -132,119 +67,22 @@
           "temp_registers": "Temperature Registers",
           "temp_limits": "Temperature Limits",
           "sensors": "Additional Sensors",
-          "settings": "Entity Settings"
+          "settings": "Entity Settings",
+          "save_as_profile": "Save as Profile"
         }
       },
-      "connection": {
-        "title": "Update Connection Settings",
-        "description": "Modify Modbus connection parameters",
+      "save_as_profile": {
+        "title": "Save Configuration as Profile",
+        "description": "Save your current settings as a reusable profile that can be used for quick setup or shared with others",
         "data": {
-          "host": "Host",
-          "port": "Port",
-          "modbus_unit": "Modbus Unit ID",
-          "scan_interval": "Scan Interval (seconds)"
+          "profile_name": "Profile Name",
+          "model_number": "Model Number",
+          "description": "Description"
         },
         "data_description": {
-          "host": "IP address of your RS485-WiFi adapter",
-          "port": "Modbus TCP port",
-          "modbus_unit": "Device ID on the Modbus network",
-          "scan_interval": "Polling interval (30-300 seconds)"
-        }
-      },
-      "control_registers": {
-        "title": "Update Control Registers",
-        "description": "Modify power and mode register addresses",
-        "data": {
-          "power_register": "Power Register",
-          "mode_register": "Mode Register",
-          "eco_mode_value": "Eco Mode Value",
-          "performance_mode_value": "Performance Mode Value",
-          "electric_mode_value": "Electric Mode Value"
-        },
-        "data_description": {
-          "power_register": "Register address for on/off control",
-          "mode_register": "Register address for operation mode",
-          "eco_mode_value": "Value to write for Eco mode",
-          "performance_mode_value": "Value to write for Performance mode",
-          "electric_mode_value": "Value to write for Electric mode"
-        }
-      },
-      "temp_registers": {
-        "title": "Update Temperature Registers",
-        "description": "Modify temperature registers and scaling",
-        "data": {
-          "temp_register": "Current Temperature Register",
-          "temp_offset": "Current Temperature Offset",
-          "temp_scale": "Current Temperature Scale",
-          "target_temp_register": "Target Temperature Register",
-          "target_temp_offset": "Target Temperature Offset",
-          "target_temp_scale": "Target Temperature Scale"
-        },
-        "data_description": {
-          "temp_register": "Register for reading current water temperature",
-          "temp_offset": "Offset to add after scaling",
-          "temp_scale": "Scale factor to multiply raw value",
-          "target_temp_register": "Register for target temperature",
-          "target_temp_offset": "Target temperature offset",
-          "target_temp_scale": "Target temperature scale"
-        }
-      },
-      "temp_limits": {
-        "title": "Update Temperature Limits",
-        "description": "Modify temperature limits for each operation mode",
-        "data": {
-          "eco_min_temp": "Eco Mode - Minimum Temperature",
-          "eco_max_temp": "Eco Mode - Maximum Temperature",
-          "performance_min_temp": "Performance Mode - Minimum Temperature",
-          "performance_max_temp": "Performance Mode - Maximum Temperature",
-          "electric_min_temp": "Electric Mode - Minimum Temperature",
-          "electric_max_temp": "Electric Mode - Maximum Temperature"
-        },
-        "data_description": {
-          "eco_min_temp": "Minimum temperature for Eco mode",
-          "eco_max_temp": "Maximum temperature for Eco mode",
-          "performance_min_temp": "Minimum temperature for Performance mode",
-          "performance_max_temp": "Maximum temperature for Performance mode",
-          "electric_min_temp": "Minimum temperature for Electric mode",
-          "electric_max_temp": "Maximum temperature for Electric mode"
-        }
-      },
-      "sensors": {
-        "title": "Update Additional Sensors",
-        "description": "Modify optional sensor configuration",
-        "data": {
-          "tank_top_temp_register": "Tank Top Temperature Register",
-          "tank_bottom_temp_register": "Tank Bottom Temperature Register",
-          "condensor_temp_register": "Condensor Temperature Register",
-          "outdoor_temp_register": "Outdoor Temperature Register",
-          "exhaust_temp_register": "Exhaust Gas Temperature Register",
-          "suction_temp_register": "Suction Temperature Register",
-          "enable_additional_sensors": "Enable Additional Sensors",
-          "sensors_temp_offset": "Sensors Temperature Offset",
-          "sensors_temp_scale": "Sensors Temperature Scale"
-        },
-        "data_description": {
-          "tank_top_temp_register": "T5U sensor register",
-          "tank_bottom_temp_register": "T5L sensor register",
-          "condensor_temp_register": "T3 sensor register",
-          "outdoor_temp_register": "T4 sensor register",
-          "exhaust_temp_register": "Tp sensor register (no scaling)",
-          "suction_temp_register": "Th sensor register",
-          "enable_additional_sensors": "Show additional temperature sensors",
-          "sensors_temp_offset": "Shared offset for sensors",
-          "sensors_temp_scale": "Shared scale for sensors"
-        }
-      },
-      "settings": {
-        "title": "Update Entity Settings",
-        "description": "Modify water heater entity configuration",
-        "data": {
-          "name": "Name",
-          "target_temperature": "Default Target Temperature"
-        },
-        "data_description": {
-          "name": "Friendly name for your water heater",
-          "target_temperature": "Default target temperature"
+          "profile_name": "Unique name for this profile",
+          "model_number": "Water heater model this profile is for",
+          "description": "Optional description of this configuration"
         }
       }
     }

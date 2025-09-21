@@ -3,7 +3,7 @@
 *Transform your Midea/OEM heat pump hot water system into a smart, Home Assistant-controlled water heater entity!*
 
 ![HACS Badge](https://img.shields.io/badge/HACS-Custom-orange.svg)
-![Version](https://img.shields.io/badge/Version-0.2.2-blue.svg)
+![Version](https://img.shields.io/badge/Version-0.2.3-blue.svg)
 [![GitHub Issues](https://img.shields.io/github/issues/0xAHA/Midea-Heat-Pump-HA.svg)](https://github.com/0xAHA/Midea-Heat-Pump-HA/issues)
 
 ---
@@ -12,24 +12,27 @@
 
 This integration creates a fully functional **water heater entity** in Home Assistant that can:
 
+- ✅ **Profile System**: Load from pre-configured profiles or save your own for easy setup and sharing
 - ✅ **UI Configuration**: Configure entirely through the Home Assistant UI - no YAML required!
 - ✅ **Mode-Specific Temperature Limits**: Enforces different min/max temperatures per operation mode
 - ✅ **Control operation modes**: Off, Eco, Performance (Hybrid), Electric (E-Heater)
 - ✅ **Set target temperature** via direct Modbus with automatic range enforcement
 - ✅ **Monitor real-time temperature** with configurable scaling
 - ✅ **Track multiple sensors**: Tank, outdoor, condensor temperatures and more
+- ✅ **Multiple device support**: Configure multiple water heaters with unique entities
 - ✅ **Integrate seamlessly** with automations, dashboards, and Lovelace cards
 - ✅ **Follow HA standards** using proper water_heater domain
 
 ## 🏆 Features
 
+- **Profile-based setup** - Quick configuration using pre-defined or custom profiles
 - **Native water_heater entity** (not climate hack!)
 - **UI-based configuration** with step-by-step setup wizard
 - **Mode-specific temperature limits** (prevent Modbus errors from invalid temperatures)
 - **Coordinated Modbus polling** - 90% reduction in network traffic!
 - **Built-in Modbus client** (no external modbus dependency!)
 - **Self-contained integration** - everything configured through UI
-- **Proper operation modes** using HA standards
+- **Profile export/import** - Share configurations with the community
 - **Real-time temperature monitoring** with configurable scaling
 - **Direct register control** for all functions
 - **Automatic polling** with configurable scan intervals
@@ -47,12 +50,14 @@ This integration is primarily developed for the **Chromagen Midea 170L Heat Pump
 - **Different capacity Midea models** (200L, 300L, etc.)
 - **Other heat pump water heaters** with Modbus RTU over TCP support
 
-The integration's flexible configuration allows you to:
+The integration's flexible configuration and profile system allows you to:
+- Load pre-configured profiles for known models
 - Adjust all register addresses
 - Configure temperature scaling and offsets
 - Customize operation mode values
 - Set mode-specific temperature limits
 - Enable/disable sensors as needed
+- Save and share your configuration as a profile
 
 This means if your hot water system uses Modbus communication, you can likely adapt this integration to work with it!
 
@@ -82,77 +87,124 @@ This means if your hot water system uses Modbus communication, you can likely ad
 
 ## 🏠 Configuration
 
-### UI Configuration (No YAML Required!)
+### Profile-Based Setup (New in v0.2.3!)
 
-Configure everything through the Home Assistant UI:
+The integration now includes a profile system for quick and easy configuration:
+
+#### Using Pre-configured Profiles
 
 1. **Add Integration**:
    - Settings → Devices & Services → Add Integration
    - Search for "Midea Heatpump HWS"
-   - Click to add
 
-2. **Step 1: Connection Settings**
-   - **Host**: IP address of your RS485-WiFi adapter (e.g., 192.168.1.80)
+2. **Choose Setup Method**:
+   - Select **"Load from Profile"** for quick setup
+   - Select **"Manual Configuration"** for custom setup
+
+3. **If using Profile**:
+   - Choose from available profiles (e.g., "Midea 170L Heat Pump")
+   - Enter your device's IP address
+   - Enter a friendly name
+   - Done! All registers and settings are pre-configured
+
+#### Manual Configuration
+
+If choosing manual setup or your model isn't in the profiles:
+
+1. **Step 1: Connection Settings**
+   - **Host**: IP address of your RS485-WiFi adapter
    - **Port**: Modbus TCP port (usually 502)
    - **Modbus Unit**: Device ID (usually 1)
-   - **Scan Interval**: How often to poll (60-300 seconds recommended)
+   - **Scan Interval**: How often to poll (60-300 seconds)
 
-3. **Step 2: Control Registers**
-   - Pre-configured for Midea units (no scaling needed):
-     - **Power Register**: Control on/off (default: 0)
-     - **Mode Register**: Operation mode (default: 1)
-     - **Mode Values**: Eco=1, Performance=2, Electric=4
+2. **Step 2: Control Registers**
+   - Power Register (default: 0)
+   - Mode Register (default: 1)
+   - Mode Values (Eco=1, Performance=2, Electric=4)
 
-4. **Step 3: Temperature Registers**
-   - Configure with individual scaling for each:
-     - **Current Temperature Register**: (default: 102)
-       - Offset: -15.0
-       - Scale: 0.5
-     - **Target Temperature Register**: (default: 2)
-       - Offset: 0.0 (usually no scaling needed)
-       - Scale: 1.0
+3. **Step 3: Temperature Registers**
+   - Current Temperature Register (default: 102)
+   - Target Temperature Register (default: 2)
+   - Individual scaling options for each
 
-5. **Step 4: Temperature Limits by Mode** *(New in v0.2.2)*
-   - Set min/max temperatures for each operation mode:
-     - **Eco Mode**: 60-65°C (default)
-     - **Performance Mode**: 60-70°C (default)
-     - **Electric Mode**: 60-70°C (default)
-   - Prevents setting invalid temperatures that cause Modbus errors
-   - UI automatically adjusts slider range based on current mode
+4. **Step 4: Temperature Limits by Mode**
+   - Eco Mode: 60-65°C (default)
+   - Performance Mode: 60-70°C (default)
+   - Electric Mode: 60-70°C (default)
 
-6. **Step 5: Optional Sensors**
-   - Enable/disable additional temperature sensors
-   - Configure register addresses and shared scaling:
-     - Tank top/bottom (101, 102)
-     - Condensor (103), Outdoor (104)
-     - Exhaust gas (105) - no scaling
-     - Suction (106)
-     - **Shared Offset**: -15.0
-     - **Shared Scale**: 0.5
+5. **Step 5: Optional Sensors**
+   - Configure additional temperature sensors
+   - Shared scaling for sensor group
 
-7. **Step 6: Entity Settings**
-   - **Name**: Friendly name for your water heater
-   - **Default Target**: Initial target temperature
+6. **Step 6: Entity Settings**
+   - Friendly name
+   - Default target temperature
+
+7. **Step 7: Save as Profile** (Optional)
+   - Save your configuration for future use
+   - Share with the community
 
 ### Reconfiguring
 
-After initial setup, you can modify ALL settings without removing the integration:
+Access all settings without removing the integration:
+- Settings → Devices & Services → Midea Heatpump HWS → Configure
+- Options include:
+  - Connection Settings
+  - Control Registers
+  - Temperature Registers
+  - Temperature Limits
+  - Sensors
+  - Entity Settings
+  - **Save as Profile** - Save current configuration
 
-1. **Access Configuration**:
-   - Settings → Devices & Services → Midea Heatpump HWS → Configure
-   
-2. **Choose what to update**:
-   - **Connection**: Modbus host, port, unit ID, scan interval
-   - **Control Registers**: Power and mode registers (no scaling)
-   - **Temperature Registers**: Temp registers with individual offset/scale
-   - **Temperature Limits**: Min/max temperatures for each mode
-   - **Sensors**: Additional sensor registers with shared offset/scale
-   - **Settings**: Entity name and default target
+---
 
-3. **Apply changes**:
-   - After updating any section, the integration automatically reloads
-   - All entities update with new configuration immediately
-   - No need to restart Home Assistant
+## 📤 Profile Management
+
+### Exporting Profiles
+
+Share your working configuration with others:
+
+1. **Via Service Call**:
+   ```yaml
+   service: midea_heatpump_hws.export_profile
+   data:
+     name: "My 170L Config"
+     model: "HP170"
+   ```
+
+2. **Via Developer Tools**:
+   - Developer Tools → Services
+   - Select `midea_heatpump_hws.export_profile`
+   - Enter optional name and model
+   - Call Service
+   - Right-click the download link in the notification to save
+
+3. **Via Configuration Menu**:
+   - Settings → Devices & Services → Your Device → Configure
+   - Select "Save as Profile"
+   - Enter profile name and model
+   - Profile saved for future use
+
+### Profile Structure
+
+Profiles are JSON files containing all configuration:
+- Register addresses
+- Scaling factors
+- Temperature limits
+- Mode values
+- Default settings
+
+Example profile location:
+- Built-in: `/custom_components/midea_heatpump_hws/models/defaults/`
+- Custom: `/custom_components/midea_heatpump_hws/models/custom/`
+
+### Sharing Profiles
+
+Exported profiles can be:
+- Shared on GitHub issues for others with the same model
+- Kept as configuration backups
+- Used for quick setup of multiple units
 
 ---
 
@@ -183,7 +235,7 @@ After initial setup, you can modify ALL settings without removing the integratio
 | Exhaust Gas Temp | 105 | Tp sensor | No scaling |
 | Suction Temp | 106 | Th sensor | Configurable |
 
-**Note**: Your heat pump model may use different registers. Use the configuration UI to adjust as needed.
+**Note**: Your heat pump model may use different registers. Use the configuration UI to adjust as needed, then save as a custom profile.
 
 ---
 
@@ -193,7 +245,7 @@ After initial setup, you can modify ALL settings without removing the integratio
 
 ```yaml
 type: tile
-entity: water_heater.hot_water_system
+entity: water_heater.hot_water_system_192_168_1_80
 features:
   - type: target-temperature
   - type: water-heater-operation-modes
@@ -204,19 +256,17 @@ features:
       - "electric"
 ```
 
-### Temperature Sensors Card
+### Multiple Water Heaters
 
 ```yaml
-type: entities
-entities:
-  - entity: sensor.current_temperature
-    name: Current Water Temp
-  - entity: sensor.tank_top_temperature
-    name: Tank Top
-  - entity: sensor.tank_bottom_temperature
-    name: Tank Bottom
-  - entity: sensor.outdoor_temperature
-    name: Outdoor
+type: vertical-stack
+cards:
+  - type: tile
+    entity: water_heater.hot_water_system_192_168_1_80
+    name: Main House
+  - type: tile
+    entity: water_heater.hot_water_system_192_168_1_81
+    name: Guest House
 ```
 
 ---
@@ -234,20 +284,9 @@ automation:
     action:
       - service: water_heater.set_operation_mode
         target:
-          entity_id: water_heater.hot_water_system
+          entity_id: water_heater.hot_water_system_192_168_1_80
         data:
           operation_mode: "eco"
-
-  - alias: "Heat pump performance mode morning"
-    trigger:
-      - platform: time
-        at: "06:00:00"
-    action:
-      - service: water_heater.set_operation_mode
-        target:
-          entity_id: water_heater.hot_water_system
-        data:
-          operation_mode: "performance"
 ```
 
 ### Temperature-based control
@@ -257,37 +296,42 @@ automation:
   - alias: "Boost heating when temperature low"
     trigger:
       - platform: numeric_state
-        entity_id: water_heater.hot_water_system
+        entity_id: water_heater.hot_water_system_192_168_1_80
         attribute: current_temperature
         below: 45
     action:
       - service: water_heater.set_operation_mode
         target:
-          entity_id: water_heater.hot_water_system
+          entity_id: water_heater.hot_water_system_192_168_1_80
         data:
           operation_mode: "performance"
 ```
 
 ---
 
-## 🚀 What's New in v0.2.2
+## 🚀 What's New in v0.2.3
 
-### Mode-Specific Temperature Limits
-- Each operation mode now has its own min/max temperature range
-- Prevents Modbus errors from setting invalid temperatures
-- UI slider automatically adjusts based on current mode
-- Automatic target temperature adjustment when switching modes
+### Profile System
+- **Pre-configured profiles** for common models (170L, 200L)
+- **Load from profile** option during initial setup for quick configuration
+- **Save as profile** option to save your working configuration
+- **Export profiles** via service call for sharing with community
+- **Import profiles** to add community-shared configurations
 
-### Enhanced Configuration
-- 6-step configuration flow (expanded from 4)
-- Separated control and temperature registers
-- Individual scaling options for different temperature registers
-- Complete reconfiguration without removing integration
+### Multiple Device Support
+- **Unique entity naming** includes device IP for clarity
+- **Support multiple water heaters** on the same network
+- **No entity conflicts** when adding multiple devices
 
-### Improved Performance
-- Immediate UI updates after commands (no waiting for next poll)
+### Enhanced Services
+- `midea_heatpump_hws.export_profile` - Export configuration to shareable JSON
+- `midea_heatpump_hws.import_profile` - Import shared profiles
+
+### Previous Features (v0.2.2)
+- Mode-specific temperature limits
+- Enhanced 6-step configuration flow
+- Immediate UI updates after commands
 - Better error handling and validation
-- Enhanced debug logging for troubleshooting
 
 ---
 
@@ -303,16 +347,16 @@ automation:
 | Modes not switching | Check mode register values and power register |
 | Connection timeouts | Increase scan interval in configuration |
 | Wrong temperature values | Adjust temperature offset and scale in config |
+| Multiple devices conflict | Each device needs unique IP address |
 
 ### Testing Other HWS Models
 
-If you have a HWS system that uses different modbus registers or has additional operating modes:
+If you have a HWS system that uses different modbus registers:
 
-1. Use the configuration UI to adjust register addresses
-2. Test with the Python script to discover your registers:
-   - [Script README](https://github.com/0xAHA/Midea-Heat-Pump-HA/blob/main/files/README_Modbus.md)
-   - [Modbus Test Script](https://github.com/0xAHA/Midea-Heat-Pump-HA/blob/main/files/modbus_test.py)
-3. Create a GitHub issue with your findings to help others!
+1. Configure manually (don't use a profile)
+2. Test and adjust register addresses as needed
+3. Once working, save as a custom profile
+4. Export and share your profile on GitHub!
 
 ### Debug Logging
 
@@ -347,15 +391,26 @@ logger:
 - [x] **Configuration UI** ✅ Completed in v0.2.0
 - [x] **Coordinated polling** ✅ Completed in v0.2.1
 - [x] **Mode-specific temperature limits** ✅ Completed in v0.2.2
-- [ ] **Model profiles** (pre-configured settings for different models)
+- [x] **Profile system** ✅ Completed in v0.2.3
+- [x] **Multiple device support** ✅ Completed in v0.2.3
+- [ ] **Community profile library** (shared configurations)
 - [ ] **Enhanced diagnostics** (connection status, detailed error reporting)
 - [ ] **Energy monitoring** (power consumption tracking)
 - [ ] **Advanced scheduling** (built-in time/temperature profiles)
-- [x] **Multi-device support** (multiple heat pumps)
 
 ---
 
 ## 🤝 Contributing
+
+### Share Your Profile!
+
+If you have a working configuration for a different model:
+1. Export your profile using the service
+2. Create a GitHub issue with your profile attached
+3. Include your water heater model and any notes
+4. Help others with the same model!
+
+### Development
 
 1. **Fork** the repository
 2. **Create** a feature branch
@@ -377,6 +432,7 @@ If this integration helped you, please:
 - ⭐ **Star** this repository
 - 🐛 **Report** any issues
 - 💡 **Suggest** improvements
+- 📤 **Share** your device profile
 - 📢 **Share** with the community
 
-*Happy heating!
+*Happy heating! 🔥*

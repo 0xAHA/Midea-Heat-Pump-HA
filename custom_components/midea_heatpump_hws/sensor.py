@@ -42,13 +42,16 @@ async def async_setup_entry(
     
     entities = []
     
+    # Include host in entity names to make them unique
+    host_suffix = f" ({config['host']})"
+    
     # Main temperature sensor
     entities.append(
         MideaTemperatureSensor(
             coordinator,
             config,
             "current_temp",
-            "Current Temperature",
+            f"Current Temperature{host_suffix}",
             config[CONF_TEMP_REGISTER],
             use_scaling=True
         )
@@ -60,7 +63,7 @@ async def async_setup_entry(
             coordinator,
             config,
             "target_temp",
-            "Target Temperature",
+            f"Target Temperature{host_suffix}",
             config[CONF_TARGET_TEMP_REGISTER],
             use_scaling=False
         )
@@ -69,12 +72,12 @@ async def async_setup_entry(
     # Additional temperature sensors if enabled
     if config.get(CONF_ENABLE_ADDITIONAL_SENSORS, True):
         sensor_configs = [
-            ("tank_top_temp", "Tank Top Temperature", config.get(CONF_TANK_TOP_TEMP_REGISTER), True),
-            ("tank_bottom_temp", "Tank Bottom Temperature", config.get(CONF_TANK_BOTTOM_TEMP_REGISTER), True),
-            ("condensor_temp", "Condensor Temperature", config.get(CONF_CONDENSOR_TEMP_REGISTER), False),
-            ("outdoor_temp", "Outdoor Temperature", config.get(CONF_OUTDOOR_TEMP_REGISTER), False),
-            ("exhaust_temp", "Exhaust Gas Temperature", config.get(CONF_EXHAUST_TEMP_REGISTER), False),
-            ("suction_temp", "Suction Temperature", config.get(CONF_SUCTION_TEMP_REGISTER), False),
+            ("tank_top_temp", f"Tank Top Temperature{host_suffix}", config.get(CONF_TANK_TOP_TEMP_REGISTER), True),
+            ("tank_bottom_temp", f"Tank Bottom Temperature{host_suffix}", config.get(CONF_TANK_BOTTOM_TEMP_REGISTER), True),
+            ("condensor_temp", f"Condensor Temperature{host_suffix}", config.get(CONF_CONDENSOR_TEMP_REGISTER), False),
+            ("outdoor_temp", f"Outdoor Temperature{host_suffix}", config.get(CONF_OUTDOOR_TEMP_REGISTER), False),
+            ("exhaust_temp", f"Exhaust Gas Temperature{host_suffix}", config.get(CONF_EXHAUST_TEMP_REGISTER), False),
+            ("suction_temp", f"Suction Temperature{host_suffix}", config.get(CONF_SUCTION_TEMP_REGISTER), False),
         ]
         
         for sensor_id, name, register, use_scaling in sensor_configs:
@@ -112,7 +115,7 @@ class MideaTemperatureSensor(CoordinatorEntity, SensorEntity):
         self._register = register
         self._use_scaling = use_scaling
         
-        # Entity attributes
+        # Entity attributes - name already includes host for uniqueness
         self._attr_name = name
         self._attr_unique_id = f"midea_{config['host']}_{config[CONF_MODBUS_UNIT]}_{sensor_id}"
         self._attr_device_class = SensorDeviceClass.TEMPERATURE
@@ -125,7 +128,7 @@ class MideaTemperatureSensor(CoordinatorEntity, SensorEntity):
         return {
             "identifiers": {(DOMAIN, f"{self._config['host']}_{self._config[CONF_MODBUS_UNIT]}")},
             "name": f"Midea Heat Pump ({self._config['host']})",
-            "manufacturer": "0xAHA",
+            "manufacturer": "Midea",
             "model": "Heat Pump Water Heater",
         }
 

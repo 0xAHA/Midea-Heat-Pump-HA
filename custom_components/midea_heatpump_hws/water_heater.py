@@ -63,9 +63,16 @@ class MideaWaterHeater(CoordinatorEntity, WaterHeaterEntity, RestoreEntity):
         self._options = options
         self._entry_id = entry_id
         
-        # Entity attributes
-        self._attr_name = config.get(CONF_NAME, "Midea Heat Pump")
-        self._attr_unique_id = f"midea_{config['host']}_{config[CONF_MODBUS_UNIT]}"
+        # Entity attributes - include host in name to make it unique across multiple instances
+        base_name = config.get(CONF_NAME, "Midea Heat Pump")
+        host = config.get('host', 'unknown')
+        
+        # Create unique entity name by including host
+        self._attr_name = f"{base_name} ({host})"
+        
+        # Unique ID ensures registry uniqueness
+        self._attr_unique_id = f"midea_{host}_{config[CONF_MODBUS_UNIT]}"
+        
         self._attr_supported_features = (
             WaterHeaterEntityFeature.TARGET_TEMPERATURE |
             WaterHeaterEntityFeature.OPERATION_MODE
@@ -74,7 +81,7 @@ class MideaWaterHeater(CoordinatorEntity, WaterHeaterEntity, RestoreEntity):
         # Temperature settings - mode specific
         self._target_temperature = config.get(CONF_TARGET_TEMP, 65)
         
-        # Store mode-specific limits
+        # Store mode-specific limits (lowercase mode names!)
         self._mode_limits = {
             "eco": {
                 "min": config.get("eco_min_temp", 60),
@@ -100,7 +107,7 @@ class MideaWaterHeater(CoordinatorEntity, WaterHeaterEntity, RestoreEntity):
             config.get(CONF_ENABLE_ADDITIONAL_SENSORS, True)
         )
 
-        # Operation list
+        # Operation list (lowercase!)
         self._operation_list = ["off", "eco", "performance", "electric"]
 
     @property
