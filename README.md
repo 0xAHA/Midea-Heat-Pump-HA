@@ -3,7 +3,7 @@
 *Transform your Midea/OEM heat pump hot water system into a smart, Home Assistant-controlled water heater entity!*
 
 ![HACS Badge](https://img.shields.io/badge/HACS-Custom-orange.svg)
-![Version](https://img.shields.io/badge/Version-0.2.3-blue.svg)
+![Version](https://img.shields.io/badge/Version-0.2.4-blue.svg)
 [![GitHub Issues](https://img.shields.io/github/issues/0xAHA/Midea-Heat-Pump-HA.svg)](https://github.com/0xAHA/Midea-Heat-Pump-HA/issues)
 
 ---
@@ -14,6 +14,7 @@ This integration creates a fully functional **water heater entity** in Home Assi
 
 - ✅ **Profile System**: Load from pre-configured profiles or save your own for easy setup and sharing
 - ✅ **UI Configuration**: Configure entirely through the Home Assistant UI - no YAML required!
+- ✅ **Sanitize/Sterilize Mode**: Dedicated switch for hot water sanitization (heats to 65°C to kill bacteria)
 - ✅ **Mode-Specific Temperature Limits**: Enforces different min/max temperatures per operation mode
 - ✅ **Control operation modes**: Off, Eco, Performance (Hybrid), Electric (E-Heater)
 - ✅ **Set target temperature** via direct Modbus with automatic range enforcement
@@ -228,6 +229,7 @@ Exported profiles can be:
 | Power State | 0 | On/Off control | None |
 | Operation Mode | 1 | Current mode | None |
 | Target Temperature | 2 | Set point | Configurable |
+| Sterilize Mode | 3 | Sanitize/sterilize mode | None |
 | Tank Top Temp | 101 | T5U sensor | Configurable |
 | Tank Bottom Temp | 102 | T5L sensor | Configurable |
 | Condensor Temp | 103 | T3 sensor | Configurable |
@@ -236,6 +238,19 @@ Exported profiles can be:
 | Suction Temp | 106 | Th sensor | Configurable |
 
 **Note**: Your heat pump model may use different registers. Use the configuration UI to adjust as needed, then save as a custom profile.
+
+### 🦠 Sanitize/Sterilize Mode
+
+The integration includes a dedicated switch for hot water sanitization mode (register 3):
+
+- **Purpose**: Heats water to 65°C to kill bacteria (Legionella prevention)
+- **Operation**: When enabled, overrides normal operation mode and forces electric heating
+- **Target Temperature**: Automatically set to 65°C during sanitization
+- **Auto-Reset**: System automatically turns off sanitize mode when both tanks reach 65.5°C
+- **Switch Entity**: Appears as "Sanitize Mode" switch alongside the power switch
+- **Recommended Use**: Run weekly or as needed for water system hygiene
+
+**Note**: The sanitize switch is created automatically if the sterilize_register is configured (default: register 3).
 
 ---
 
@@ -254,6 +269,27 @@ features:
       - "eco"
       - "performance"
       - "electric"
+```
+
+### Water Heater with Sanitize Mode
+
+```yaml
+type: vertical-stack
+cards:
+  - type: tile
+    entity: water_heater.hot_water_system_192_168_1_80
+    features:
+      - type: target-temperature
+      - type: water-heater-operation-modes
+        operation_modes:
+          - "off"
+          - "eco"
+          - "performance"
+          - "electric"
+  - type: tile
+    entity: switch.sanitize_mode_192_168_1_80
+    name: Sanitize Mode
+    icon: mdi:water-boiler
 ```
 
 ### Multiple Water Heaters
@@ -307,31 +343,50 @@ automation:
           operation_mode: "performance"
 ```
 
+### Weekly sanitization schedule
+
+```yaml
+automation:
+  - alias: "Weekly hot water sanitization"
+    trigger:
+      - platform: time
+        at: "02:00:00"
+    condition:
+      - condition: time
+        weekday:
+          - sun
+    action:
+      - service: switch.turn_on
+        target:
+          entity_id: switch.sanitize_mode_192_168_1_80
+      - service: notify.mobile_app
+        data:
+          title: "Hot Water System"
+          message: "Weekly sanitization cycle started"
+```
+
 ---
 
-## 🚀 What's New in v0.2.3
+## 🚀 What's New in v0.2.4
 
-### Profile System
-- **Pre-configured profiles** for common models (170L, 200L)
-- **Load from profile** option during initial setup for quick configuration
-- **Save as profile** option to save your working configuration
-- **Export profiles** via service call for sharing with community
-- **Import profiles** to add community-shared configurations
+### Sanitize/Sterilize Mode Support
+- **Dedicated sanitize switch** for hot water system hygiene
+- **Automatic heating to 65°C** to kill bacteria (Legionella prevention)
+- **Override system** that temporarily takes control of operation mode
+- **Auto-reset feature** when target temperature reached
+- **Configurable register** (default: register 3, optional in setup)
+- **EcoSpring HP300 profile** added to default profiles
 
-### Multiple Device Support
-- **Unique entity naming** includes device IP for clarity
-- **Support multiple water heaters** on the same network
-- **No entity conflicts** when adding multiple devices
+### Bug Fixes & Improvements
+- Added Python cache files to .gitignore
+- Improved register documentation in README
+- Enhanced modbus_test.py with sterilize register support
 
-### Enhanced Services
-- `midea_heatpump_hws.export_profile` - Export configuration to shareable JSON
-- `midea_heatpump_hws.import_profile` - Import shared profiles
-
-### Previous Features (v0.2.2)
-- Mode-specific temperature limits
-- Enhanced 6-step configuration flow
-- Immediate UI updates after commands
-- Better error handling and validation
+### Previous Features (v0.2.3)
+- Profile system with pre-configured models
+- Multiple device support with unique entity naming
+- Export/import profiles for community sharing
+- Enhanced services for profile management
 
 ---
 

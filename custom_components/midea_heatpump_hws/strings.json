@@ -41,6 +41,104 @@
           "scan_interval": "How often to poll for updates (60-300 recommended)"
         }
       },
+      "registers": {
+        "title": "Control Registers",
+        "description": "Configure power and mode register addresses",
+        "data": {
+          "power_register": "Power Register",
+          "mode_register": "Mode Register",
+          "sterilize_register": "Sterilize Register (Optional)",
+          "eco_mode_value": "Eco Mode Value",
+          "performance_mode_value": "Performance Mode Value",
+          "electric_mode_value": "Electric Mode Value"
+        },
+        "data_description": {
+          "power_register": "Register address for power on/off (default: 0)",
+          "mode_register": "Register address for operation mode (default: 1)",
+          "sterilize_register": "Register address for sanitize mode (default: 3, leave blank to disable)",
+          "eco_mode_value": "Value to write for eco mode (default: 1)",
+          "performance_mode_value": "Value to write for performance mode (default: 2)",
+          "electric_mode_value": "Value to write for electric mode (default: 4)"
+        }
+      },
+      "temp_registers": {
+        "title": "Temperature Registers",
+        "description": "Configure temperature register addresses with scaling",
+        "data": {
+          "temp_register": "Current Temperature Register",
+          "temp_offset": "Current Temperature Offset",
+          "temp_scale": "Current Temperature Scale",
+          "target_temp_register": "Target Temperature Register",
+          "target_temp_offset": "Target Temperature Offset",
+          "target_temp_scale": "Target Temperature Scale"
+        },
+        "data_description": {
+          "temp_register": "Register address for current temperature (default: 102)",
+          "temp_offset": "Offset to add to current temp (default: -15.0)",
+          "temp_scale": "Multiplier for current temp (default: 0.5)",
+          "target_temp_register": "Register address for target temperature (default: 2)",
+          "target_temp_offset": "Offset to add to target temp (default: 0.0)",
+          "target_temp_scale": "Multiplier for target temp (default: 1.0)"
+        }
+      },
+      "temp_limits": {
+        "title": "Temperature Limits",
+        "description": "Set min/max temperatures for each operation mode",
+        "data": {
+          "eco_min_temp": "Eco Mode Min Temperature",
+          "eco_max_temp": "Eco Mode Max Temperature",
+          "performance_min_temp": "Performance Mode Min Temperature",
+          "performance_max_temp": "Performance Mode Max Temperature",
+          "electric_min_temp": "Electric Mode Min Temperature",
+          "electric_max_temp": "Electric Mode Max Temperature"
+        },
+        "data_description": {
+          "eco_min_temp": "Minimum temperature for eco mode (default: 60)",
+          "eco_max_temp": "Maximum temperature for eco mode (default: 65)",
+          "performance_min_temp": "Minimum temperature for performance mode (default: 60)",
+          "performance_max_temp": "Maximum temperature for performance mode (default: 70)",
+          "electric_min_temp": "Minimum temperature for electric mode (default: 60)",
+          "electric_max_temp": "Maximum temperature for electric mode (default: 70)"
+        }
+      },
+      "sensors": {
+        "title": "Additional Sensors",
+        "description": "Configure optional temperature sensors",
+        "data": {
+          "tank_top_temp_register": "Tank Top Temperature Register",
+          "tank_bottom_temp_register": "Tank Bottom Temperature Register",
+          "condensor_temp_register": "Condensor Temperature Register",
+          "outdoor_temp_register": "Outdoor Temperature Register",
+          "exhaust_temp_register": "Exhaust Temperature Register",
+          "suction_temp_register": "Suction Temperature Register",
+          "enable_additional_sensors": "Enable Additional Sensors",
+          "sensors_temp_offset": "Sensors Temperature Offset",
+          "sensors_temp_scale": "Sensors Temperature Scale"
+        },
+        "data_description": {
+          "tank_top_temp_register": "Register for top tank sensor T5U (default: 101)",
+          "tank_bottom_temp_register": "Register for bottom tank sensor T5L (default: 102)",
+          "condensor_temp_register": "Register for condensor sensor T3 (default: 103)",
+          "outdoor_temp_register": "Register for outdoor sensor T4 (default: 104)",
+          "exhaust_temp_register": "Register for exhaust sensor Tp (default: 105)",
+          "suction_temp_register": "Register for suction sensor Th (default: 106)",
+          "enable_additional_sensors": "Enable reading additional temperature sensors",
+          "sensors_temp_offset": "Offset for sensor temps (default: -15.0)",
+          "sensors_temp_scale": "Scale for sensor temps (default: 0.5)"
+        }
+      },
+      "final": {
+        "title": "Entity Settings",
+        "description": "Configure the water heater entity",
+        "data": {
+          "name": "Name",
+          "target_temperature": "Default Target Temperature"
+        },
+        "data_description": {
+          "name": "Friendly name for your water heater",
+          "target_temperature": "Initial target temperature (default: 65)"
+        }
+      },
       "save_profile": {
         "title": "Save as Profile?",
         "description": "Optionally save this configuration as a reusable profile for easy setup or sharing",
@@ -70,6 +168,30 @@
           "settings": "Entity Settings",
           "save_as_profile": "Save as Profile"
         }
+      },
+      "connection": {
+        "title": "Update Connection Settings",
+        "description": "Modify Modbus connection parameters"
+      },
+      "control_registers": {
+        "title": "Update Control Registers",
+        "description": "Modify power and mode register addresses (no scaling needed)"
+      },
+      "temp_registers": {
+        "title": "Update Temperature Registers",
+        "description": "Configure temperature registers with individual offset and scale values"
+      },
+      "temp_limits": {
+        "title": "Update Temperature Limits",
+        "description": "Configure min/max temperatures for each operation mode"
+      },
+      "sensors": {
+        "title": "Update Additional Sensors",
+        "description": "Configure optional temperature sensors with shared offset and scale values"
+      },
+      "settings": {
+        "title": "Update Entity Settings",
+        "description": "Modify entity name and default temperature"
       },
       "save_as_profile": {
         "title": "Save Configuration as Profile",

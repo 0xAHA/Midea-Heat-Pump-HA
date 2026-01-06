@@ -1,0 +1,70 @@
+{
+  "name": "EcoSpring HP300",
+  "model": "HP300",
+  "manufacturer": "EcoSpring",
+  "version": "1.0",
+  "description": "Configuration for EcoSpring 300L heat pump water heater with sanitize mode support",
+  "created": "2025-01-06T00:00:00",
+  "author": "Community Contribution",
+
+  "connection": {
+    "port": 502,
+    "modbus_unit": 1,
+    "scan_interval": 60
+  },
+
+  "registers": {
+    "power": 0,
+    "mode": 1,
+    "current_temp": 102,
+    "target_temp": 2,
+    "sterilize": 3,
+    "tank_top_temp": 101,
+    "tank_bottom_temp": 102,
+    "condensor_temp": 103,
+    "outdoor_temp": 104,
+    "exhaust_temp": 105,
+    "suction_temp": 106
+  },
+
+  "mode_values": {
+    "eco": 1,
+    "performance": 2,
+    "electric": 4
+  },
+
+  "scaling": {
+    "current_temp": {
+      "offset": -15.0,
+      "scale": 0.5
+    },
+    "target_temp": {
+      "offset": 0.0,
+      "scale": 1.0
+    },
+    "sensors": {
+      "offset": -15.0,
+      "scale": 0.5
+    }
+  },
+
+  "temp_limits": {
+    "eco": {
+      "min": 60,
+      "max": 65
+    },
+    "performance": {
+      "min": 60,
+      "max": 70
+    },
+    "electric": {
+      "min": 60,
+      "max": 70
+    }
+  },
+
+  "defaults": {
+    "target_temperature": 65,
+    "enable_additional_sensors": true
+  }
+}
