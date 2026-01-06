@@ -51,14 +51,14 @@ STEP_TEMP_REGISTERS_SCHEMA = vol.Schema({
 # Step 4: Temperature limits by mode
 STEP_TEMP_LIMITS_SCHEMA = vol.Schema({
     # Eco mode limits
-    vol.Required("eco_min_temp", default=60): vol.All(int, vol.Range(min=40, max=80)),
-    vol.Required("eco_max_temp", default=65): vol.All(int, vol.Range(min=40, max=80)),
+    vol.Required("eco_min_temp", default=60): int,
+    vol.Required("eco_max_temp", default=65): int,
     # Performance mode limits
-    vol.Required("performance_min_temp", default=60): vol.All(int, vol.Range(min=40, max=80)),
-    vol.Required("performance_max_temp", default=70): vol.All(int, vol.Range(min=40, max=80)),
+    vol.Required("performance_min_temp", default=60): int,
+    vol.Required("performance_max_temp", default=70): int,
     # Electric mode limits
-    vol.Required("electric_min_temp", default=60): vol.All(int, vol.Range(min=40, max=80)),
-    vol.Required("electric_max_temp", default=70): vol.All(int, vol.Range(min=40, max=80)),
+    vol.Required("electric_min_temp", default=60): int,
+    vol.Required("electric_max_temp", default=70): int,
 })
 
 # Step 5: Optional sensors with shared scaling
@@ -578,24 +578,12 @@ class MideaHeatPumpOptionsFlow(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="temp_limits",
             data_schema=vol.Schema({
-                vol.Required("eco_min_temp", default=current_data.get("eco_min_temp", 60)): vol.All(
-                    int, vol.Range(min=40, max=80)
-                ),
-                vol.Required("eco_max_temp", default=current_data.get("eco_max_temp", 65)): vol.All(
-                    int, vol.Range(min=40, max=80)
-                ),
-                vol.Required("performance_min_temp", default=current_data.get("performance_min_temp", 60)): vol.All(
-                    int, vol.Range(min=40, max=80)
-                ),
-                vol.Required("performance_max_temp", default=current_data.get("performance_max_temp", 70)): vol.All(
-                    int, vol.Range(min=40, max=80)
-                ),
-                vol.Required("electric_min_temp", default=current_data.get("electric_min_temp", 60)): vol.All(
-                    int, vol.Range(min=40, max=80)
-                ),
-                vol.Required("electric_max_temp", default=current_data.get("electric_max_temp", 70)): vol.All(
-                    int, vol.Range(min=40, max=80)
-                ),
+                vol.Required("eco_min_temp", default=current_data.get("eco_min_temp", 60)): int,
+                vol.Required("eco_max_temp", default=current_data.get("eco_max_temp", 65)): int,
+                vol.Required("performance_min_temp", default=current_data.get("performance_min_temp", 60)): int,
+                vol.Required("performance_max_temp", default=current_data.get("performance_max_temp", 70)): int,
+                vol.Required("electric_min_temp", default=current_data.get("electric_min_temp", 60)): int,
+                vol.Required("electric_max_temp", default=current_data.get("electric_max_temp", 70)): int,
             }),
             description_placeholders={
                 "title": "Update Temperature Limits",
