@@ -22,12 +22,17 @@ async def async_setup_entry(
     """Set up Midea switches from config entry."""
     coordinator = hass.data[DOMAIN][config_entry.entry_id]["coordinator"]
     config = hass.data[DOMAIN][config_entry.entry_id]["config"]
-    
+
     # Include host in entity name to make it unique
     host_suffix = f" ({config['host']})"
-    
-    # Only create power switch
+
+    # Create switches
     entities = [MideaPowerSwitch(coordinator, config, host_suffix)]
+
+    # Add sterilize switch if register is configured
+    if config.get("sterilize_register") is not None:
+        entities.append(MideaSterilizeSwitch(coordinator, config, host_suffix))
+
     async_add_entities(entities)
 
 
@@ -78,6 +83,60 @@ class MideaPowerSwitch(CoordinatorEntity, SwitchEntity):
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the switch off."""
         await self.coordinator.write_register("power_state", False)
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        self.async_write_ha_state()
+
+
+class MideaSterilizeSwitch(CoordinatorEntity, SwitchEntity):
+    """Representation of the sterilize/sanitize mode switch."""
+
+    def __init__(
+        self,
+        coordinator: MideaModbusCoordinator,
+        config: dict,
+        host_suffix: str
+    ):
+        """Initialize the sterilize switch."""
+        super().__init__(coordinator)
+        self._config = config
+
+        # Entity attributes - include host for uniqueness
+        self._attr_name = f"Sanitize Mode{host_suffix}"
+        self._attr_unique_id = f"midea_{config['host']}_{config[CONF_MODBUS_UNIT]}_sterilize"
+        self._attr_icon = "mdi:water-boiler"
+
+    @property
+    def device_info(self):
+        """Return device info to link this switch to the main device."""
+        return {
+            "identifiers": {(DOMAIN, f"{self._config['host']}_{self._config[CONF_MODBUS_UNIT]}")},
+            "name": f"Midea Heat Pump ({self._config['host']})",
+            "manufacturer": "Midea",
+            "model": "Heat Pump Water Heater",
+        }
+
+    @property
+    def is_on(self) -> bool:
+        """Return true if sterilize mode is on."""
+        if self.coordinator.data:
+            return self.coordinator.data.get("sterilize_mode", False)
+        return False
+
+    @property
+    def available(self) -> bool:
+        """Return if entity is available."""
+        return self.coordinator.last_update_success
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Turn sterilize mode on."""
+        await self.coordinator.write_register("sterilize_mode", True)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        """Turn sterilize mode off."""
+        await self.coordinator.write_register("sterilize_mode", False)
 
     @callback
     def _handle_coordinator_update(self) -> None:
