@@ -32,7 +32,7 @@ STEP_CONNECTION_DATA_SCHEMA = vol.Schema({
 STEP_CONTROL_REGISTERS_SCHEMA = vol.Schema({
     vol.Required("power_register", default=0): int,
     vol.Required("mode_register", default=1): int,
-    vol.Optional("sterilize_register", default=3): int,
+    vol.Optional("sterilize_register"): int,
     vol.Required("eco_mode_value", default=1): int,
     vol.Required("performance_mode_value", default=2): int,
     vol.Required("electric_mode_value", default=4): int,
@@ -530,7 +530,7 @@ class MideaHeatPumpOptionsFlow(config_entries.OptionsFlow):
             data_schema=vol.Schema({
                 vol.Required("power_register", default=current_data.get("power_register", 0)): int,
                 vol.Required("mode_register", default=current_data.get("mode_register", 1)): int,
-                vol.Optional("sterilize_register", default=current_data.get("sterilize_register", 3)): int,
+                vol.Optional("sterilize_register", default=current_data.get("sterilize_register")): int,
                 vol.Required("eco_mode_value", default=current_data.get("eco_mode_value", 1)): int,
                 vol.Required("performance_mode_value", default=current_data.get("performance_mode_value", 2)): int,
                 vol.Required("electric_mode_value", default=current_data.get("electric_mode_value", 4)): int,

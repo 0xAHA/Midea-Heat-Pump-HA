@@ -4,13 +4,16 @@
 
 ### 🦠 New Features
 
-#### Sanitize/Sterilize Mode
-- **Dedicated sanitize switch** for hot water system hygiene and Legionella prevention
-- **Automatic heating to 65°C** to kill bacteria in the hot water system
-- **Override mode control** - Temporarily forces electric heating mode during sanitization
-- **Auto-reset functionality** - Automatically disables when both tanks reach 65.5°C
-- **Configurable register** - Sterilize register (default: 3) is optional during setup
-- **Switch entity** - Appears as "Sanitize Mode" alongside the power switch
+#### Sanitize/Sterilize Mode (Optional Feature)
+- **Optional sanitize switch** for models that support hot water sanitization
+- **Simple on/off control** - Integration writes only to register 3 (0=off, 1=on)
+- **Hardware-controlled behavior** - The heat pump automatically handles:
+  - Mode override (switches to electric heating)
+  - Temperature control (sets to 65°C)
+  - Auto-reset when complete (both tanks reach 65.5°C)
+- **Not enabled by default** - Sterilize register is optional in setup
+- **Conditional switch** - Only appears if sterilize_register is configured
+- **Profile support** - EcoSpring HP300 profile includes sanitize register pre-configured
 
 #### New Profile
 - **EcoSpring HP300** profile added to default profiles for easy configuration

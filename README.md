@@ -239,18 +239,25 @@ Exported profiles can be:
 
 **Note**: Your heat pump model may use different registers. Use the configuration UI to adjust as needed, then save as a custom profile.
 
-### 🦠 Sanitize/Sterilize Mode
+### 🦠 Sanitize/Sterilize Mode (Optional)
 
-The integration includes a dedicated switch for hot water sanitization mode (register 3):
+Some heat pump models support a dedicated sanitization mode. If your model has this feature:
 
 - **Purpose**: Heats water to 65°C to kill bacteria (Legionella prevention)
-- **Operation**: When enabled, overrides normal operation mode and forces electric heating
-- **Target Temperature**: Automatically set to 65°C during sanitization
-- **Auto-Reset**: System automatically turns off sanitize mode when both tanks reach 65.5°C
-- **Switch Entity**: Appears as "Sanitize Mode" switch alongside the power switch
+- **Hardware Operation**: When enabled via register 3, the heat pump automatically:
+  - Overrides normal operation mode
+  - Forces electric heating
+  - Sets target to 65°C
+  - Auto-resets when both tanks reach 65.5°C
+- **Integration**: Provides a simple switch to turn sanitize mode on/off
+- **Switch Entity**: Appears as "Sanitize Mode" alongside the power switch
 - **Recommended Use**: Run weekly or as needed for water system hygiene
 
-**Note**: The sanitize switch is created automatically if the sterilize_register is configured (default: register 3).
+**Configuration**:
+- The sanitize register is **optional** during setup
+- Only configure it if your model supports this feature (typically register 3)
+- Leave blank during setup if your model doesn't have sanitize mode
+- The switch will only appear if you configure the sterilize_register
 
 ---
 
@@ -369,13 +376,12 @@ automation:
 
 ## 🚀 What's New in v0.2.4
 
-### Sanitize/Sterilize Mode Support
-- **Dedicated sanitize switch** for hot water system hygiene
-- **Automatic heating to 65°C** to kill bacteria (Legionella prevention)
-- **Override system** that temporarily takes control of operation mode
-- **Auto-reset feature** when target temperature reached
-- **Configurable register** (default: register 3, optional in setup)
-- **EcoSpring HP300 profile** added to default profiles
+### Sanitize/Sterilize Mode Support (Optional Feature)
+- **Optional sanitize switch** for models that support hot water sanitization
+- **Hardware-controlled** - Integration only enables/disables, heat pump handles the rest
+- **Simple on/off control** via switch entity (register 3)
+- **Not enabled by default** - Only appears if you configure the sterilize register
+- **EcoSpring HP300 profile** added with sanitize support pre-configured
 
 ### Bug Fixes & Improvements
 - Added Python cache files to .gitignore

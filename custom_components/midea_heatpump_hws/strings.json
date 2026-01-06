@@ -55,7 +55,7 @@
         "data_description": {
           "power_register": "Register address for power on/off (default: 0)",
           "mode_register": "Register address for operation mode (default: 1)",
-          "sterilize_register": "Register address for sanitize mode (default: 3, leave blank to disable)",
+          "sterilize_register": "Optional: Register address for sanitize mode (only if your model supports it, leave blank otherwise)",
           "eco_mode_value": "Value to write for eco mode (default: 1)",
           "performance_mode_value": "Value to write for performance mode (default: 2)",
           "electric_mode_value": "Value to write for electric mode (default: 4)"
