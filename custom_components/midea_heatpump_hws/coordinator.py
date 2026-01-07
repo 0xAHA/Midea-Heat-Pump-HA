@@ -18,6 +18,7 @@ from .const import (
     CONF_MODE_REGISTER,
     CONF_TEMP_REGISTER,
     CONF_TARGET_TEMP_REGISTER,
+    CONF_STERILIZE_REGISTER,
     CONF_ECO_MODE_VALUE,
     CONF_PERFORMANCE_MODE_VALUE,
     CONF_ELECTRIC_MODE_VALUE,
@@ -64,6 +65,7 @@ class MideaModbusCoordinator(DataUpdateCoordinator):
         self.mode_register = config.get(CONF_MODE_REGISTER)
         self.temp_register = config.get(CONF_TEMP_REGISTER)
         self.target_temp_register = config.get(CONF_TARGET_TEMP_REGISTER)
+        self.sterilize_register = config.get(CONF_STERILIZE_REGISTER)
 
         # Temperature scaling (general sensor / temp)
         # Keep backwards compatibility: use provided CONF_TEMP_* as fallback
@@ -191,6 +193,23 @@ class MideaModbusCoordinator(DataUpdateCoordinator):
                         _LOGGER.warning("Failed to read target temperature register %s : %s", self.target_temp_register, target_result)
                 except Exception as ex:
                     _LOGGER.exception("Exception reading target temperature register: %s", ex)
+
+                # Read sterilize mode
+                if self.sterilize_register is not None:
+                    try:
+                        sterilize_result = await self._client.read_holding_registers(
+                            address=self.sterilize_register,
+                            count=1,
+                            device_id=self.modbus_unit
+                        )
+                        if not sterilize_result.isError():
+                            sterilize_value = sterilize_result.registers[0]
+                            data["sterilize_mode"] = bool(sterilize_value)
+                            _LOGGER.debug("Read sterilize register %s -> %s", self.sterilize_register, sterilize_value)
+                        else:
+                            _LOGGER.warning("Failed to read sterilize register %s : %s", self.sterilize_register, sterilize_result)
+                    except Exception as ex:
+                        _LOGGER.exception("Exception reading sterilize register: %s", ex)
 
                 # Determine operation state
                 if data.get("power_state", False):
@@ -331,7 +350,19 @@ class MideaModbusCoordinator(DataUpdateCoordinator):
                                 _LOGGER.error("Failed to write mode: %s", result)
                             else:
                                 _LOGGER.debug("Successfully wrote mode = %s", params)
-                    
+
+                    elif operation == "sterilize_mode":
+                        if self.sterilize_register is not None:
+                            result = await self._client.write_register(
+                                address=self.sterilize_register,
+                                value=1 if params else 0,
+                                device_id=self.modbus_unit
+                            )
+                            if result.isError():
+                                _LOGGER.error("Failed to write sterilize mode: %s", result)
+                            else:
+                                _LOGGER.debug("Successfully wrote sterilize mode = %s", params)
+
                     elif operation == "operation_mode":
                         # Handle water heater operation mode changes (now lowercase!)
                         if params == "off":  # lowercase!
@@ -417,7 +448,19 @@ class MideaModbusCoordinator(DataUpdateCoordinator):
                         if self.data.get("power_state", False):
                             self.data["operation"] = self.data["mode"]
                         _LOGGER.debug("Read back mode: %s", self.data["mode"])
-                        
+
+                elif operation == "sterilize_mode":
+                    # Read back sterilize mode after write
+                    if self.sterilize_register is not None:
+                        result = await self._client.read_holding_registers(
+                            address=self.sterilize_register,
+                            count=1,
+                            device_id=self.modbus_unit
+                        )
+                        if not result.isError() and result.registers:
+                            self.data["sterilize_mode"] = bool(result.registers[0])
+                            _LOGGER.debug("Read back sterilize mode: %s", self.data["sterilize_mode"])
+
                 elif operation == "operation_mode":
                     # After setting operation mode, read both power and mode
                     power_result = await self._client.read_holding_registers(

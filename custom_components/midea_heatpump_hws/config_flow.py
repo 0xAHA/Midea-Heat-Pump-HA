@@ -32,6 +32,7 @@ STEP_CONNECTION_DATA_SCHEMA = vol.Schema({
 STEP_CONTROL_REGISTERS_SCHEMA = vol.Schema({
     vol.Required("power_register", default=0): int,
     vol.Required("mode_register", default=1): int,
+    vol.Optional("sterilize_register"): int,
     vol.Required("eco_mode_value", default=1): int,
     vol.Required("performance_mode_value", default=2): int,
     vol.Required("electric_mode_value", default=4): int,
@@ -50,14 +51,14 @@ STEP_TEMP_REGISTERS_SCHEMA = vol.Schema({
 # Step 4: Temperature limits by mode
 STEP_TEMP_LIMITS_SCHEMA = vol.Schema({
     # Eco mode limits
-    vol.Required("eco_min_temp", default=60): vol.All(int, vol.Range(min=40, max=80)),
-    vol.Required("eco_max_temp", default=65): vol.All(int, vol.Range(min=40, max=80)),
+    vol.Required("eco_min_temp", default=60): int,
+    vol.Required("eco_max_temp", default=65): int,
     # Performance mode limits
-    vol.Required("performance_min_temp", default=60): vol.All(int, vol.Range(min=40, max=80)),
-    vol.Required("performance_max_temp", default=70): vol.All(int, vol.Range(min=40, max=80)),
+    vol.Required("performance_min_temp", default=60): int,
+    vol.Required("performance_max_temp", default=70): int,
     # Electric mode limits
-    vol.Required("electric_min_temp", default=60): vol.All(int, vol.Range(min=40, max=80)),
-    vol.Required("electric_max_temp", default=70): vol.All(int, vol.Range(min=40, max=80)),
+    vol.Required("electric_min_temp", default=60): int,
+    vol.Required("electric_max_temp", default=70): int,
 })
 
 # Step 5: Optional sensors with shared scaling
@@ -434,7 +435,6 @@ class MideaHeatPumpOptionsFlow(config_entries.OptionsFlow):
 
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow."""
-        self.config_entry = config_entry
         self.data = {}
 
     async def async_step_init(
@@ -481,14 +481,7 @@ class MideaHeatPumpOptionsFlow(config_entries.OptionsFlow):
         )
         
         # Show success message
-        return self.async_create_entry(
-            title="",
-            data={},
-            description_placeholders={
-                "title": "Profile Saved",
-                "description": f"Profile saved successfully: {user_input['profile_name']}"
-            }
-        )
+        return self.async_create_entry(data={})
 
     async def async_step_connection(
         self, user_input: dict[str, Any] | None = None
@@ -529,6 +522,7 @@ class MideaHeatPumpOptionsFlow(config_entries.OptionsFlow):
             data_schema=vol.Schema({
                 vol.Required("power_register", default=current_data.get("power_register", 0)): int,
                 vol.Required("mode_register", default=current_data.get("mode_register", 1)): int,
+                vol.Optional("sterilize_register", default=current_data.get("sterilize_register")): int,
                 vol.Required("eco_mode_value", default=current_data.get("eco_mode_value", 1)): int,
                 vol.Required("performance_mode_value", default=current_data.get("performance_mode_value", 2)): int,
                 vol.Required("electric_mode_value", default=current_data.get("electric_mode_value", 4)): int,
@@ -576,24 +570,12 @@ class MideaHeatPumpOptionsFlow(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="temp_limits",
             data_schema=vol.Schema({
-                vol.Required("eco_min_temp", default=current_data.get("eco_min_temp", 60)): vol.All(
-                    int, vol.Range(min=40, max=80)
-                ),
-                vol.Required("eco_max_temp", default=current_data.get("eco_max_temp", 65)): vol.All(
-                    int, vol.Range(min=40, max=80)
-                ),
-                vol.Required("performance_min_temp", default=current_data.get("performance_min_temp", 60)): vol.All(
-                    int, vol.Range(min=40, max=80)
-                ),
-                vol.Required("performance_max_temp", default=current_data.get("performance_max_temp", 70)): vol.All(
-                    int, vol.Range(min=40, max=80)
-                ),
-                vol.Required("electric_min_temp", default=current_data.get("electric_min_temp", 60)): vol.All(
-                    int, vol.Range(min=40, max=80)
-                ),
-                vol.Required("electric_max_temp", default=current_data.get("electric_max_temp", 70)): vol.All(
-                    int, vol.Range(min=40, max=80)
-                ),
+                vol.Required("eco_min_temp", default=current_data.get("eco_min_temp", 60)): int,
+                vol.Required("eco_max_temp", default=current_data.get("eco_max_temp", 65)): int,
+                vol.Required("performance_min_temp", default=current_data.get("performance_min_temp", 60)): int,
+                vol.Required("performance_max_temp", default=current_data.get("performance_max_temp", 70)): int,
+                vol.Required("electric_min_temp", default=current_data.get("electric_min_temp", 60)): int,
+                vol.Required("electric_max_temp", default=current_data.get("electric_max_temp", 70)): int,
             }),
             description_placeholders={
                 "title": "Update Temperature Limits",
@@ -653,15 +635,11 @@ class MideaHeatPumpOptionsFlow(config_entries.OptionsFlow):
         )
 
     async def _update_and_reload(self) -> FlowResult:
-        """Update config entry and reload."""
-        # Merge the new data with existing data
         new_data = {**self.config_entry.data, **self.data}
-        
-        # Update the config entry
+
         self.hass.config_entries.async_update_entry(
             self.config_entry,
-            data=new_data
+            data=new_data,
         )
-        
-        # The update_listener in __init__.py will handle the reload automatically
-        return self.async_create_entry(title="", data={})
+
+        return self.async_create_entry(data={})

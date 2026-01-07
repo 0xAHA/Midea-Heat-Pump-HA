@@ -1,2 +1,9 @@
 customer_components/midea_heatpump/hws/models/custom/*
 !customer_components/midea_heatpump/hws/models/custom/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python

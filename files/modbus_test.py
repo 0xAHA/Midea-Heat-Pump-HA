@@ -21,7 +21,8 @@ WATER_HEATER_REGISTERS = [
     {"address": 0, "name": "Power State", "type": "status", "description": "On/Off Status"},
     {"address": 1, "name": "Operating Mode", "type": "mode", "description": "Heat pump mode"},
     {"address": 2, "name": "Target Temperature", "type": "temperature", "unit": "°C", "description": "Set point temperature"},
-    
+    {"address": 3, "name": "Sterilize Mode", "type": "status", "description": "Heats to over 65°C to prevent bacteria"},
+
     # Temperature sensors
     {"address": 101, "name": "Tank Top Temperature (T5U)", "type": "temperature", "unit": "°C", "offset": -15, "scale": 0.5, "description": "Top of tank temperature"},
     {"address": 102, "name": "Tank Bottom Temperature (T5L)", "type": "temperature", "unit": "°C", "offset": -15, "scale": 0.5, "description": "Bottom of tank temperature"},
