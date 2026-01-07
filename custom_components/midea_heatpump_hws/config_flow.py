@@ -435,7 +435,6 @@ class MideaHeatPumpOptionsFlow(config_entries.OptionsFlow):
 
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow."""
-        self.config_entry = config_entry
         self.data = {}
 
     async def async_step_init(
@@ -482,14 +481,7 @@ class MideaHeatPumpOptionsFlow(config_entries.OptionsFlow):
         )
         
         # Show success message
-        return self.async_create_entry(
-            title="",
-            data={},
-            description_placeholders={
-                "title": "Profile Saved",
-                "description": f"Profile saved successfully: {user_input['profile_name']}"
-            }
-        )
+        return self.async_create_entry(data={})
 
     async def async_step_connection(
         self, user_input: dict[str, Any] | None = None
@@ -643,15 +635,11 @@ class MideaHeatPumpOptionsFlow(config_entries.OptionsFlow):
         )
 
     async def _update_and_reload(self) -> FlowResult:
-        """Update config entry and reload."""
-        # Merge the new data with existing data
         new_data = {**self.config_entry.data, **self.data}
-        
-        # Update the config entry
+
         self.hass.config_entries.async_update_entry(
             self.config_entry,
-            data=new_data
+            data=new_data,
         )
-        
-        # The update_listener in __init__.py will handle the reload automatically
-        return self.async_create_entry(title="", data={})
+
+        return self.async_create_entry(data={})
