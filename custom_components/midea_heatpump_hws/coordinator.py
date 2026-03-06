@@ -3,7 +3,7 @@ import asyncio
 import logging
 import traceback
 from datetime import timedelta
-from typing import Any, Dict, Optional
+from typing import Any
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -101,11 +101,11 @@ class MideaModbusCoordinator(DataUpdateCoordinator):
                 "suction_temp": config.get(CONF_SUCTION_TEMP_REGISTER),
             }
 
-        self._client: Optional[AsyncModbusTcpClient] = None
+        self._client: AsyncModbusTcpClient | None = None
         self._lock = asyncio.Lock()
-        self._pending_writes: Dict[str, Any] = {}
+        self._pending_writes: dict[str, Any] = {}
 
-    async def _async_update_data(self) -> Dict[str, Any]:
+    async def _async_update_data(self) -> dict[str, Any]:
         """Fetch all data from modbus."""
         try:
             # Process any pending writes first

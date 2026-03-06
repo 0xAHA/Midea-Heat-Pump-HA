@@ -1,6 +1,6 @@
 """Support for Midea Heat Pump temperature sensors."""
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from homeassistant.components.sensor import (
     SensorEntity,
@@ -133,7 +133,7 @@ class MideaTemperatureSensor(CoordinatorEntity, SensorEntity):
         }
 
     @property
-    def native_value(self) -> Optional[Any]:
+    def native_value(self) -> Any:
         """Return the state of the sensor."""
         if self.coordinator.data:
             # Get the value from coordinator data
