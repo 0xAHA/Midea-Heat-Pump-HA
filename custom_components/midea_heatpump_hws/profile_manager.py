@@ -4,7 +4,7 @@ import logging
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from homeassistant.core import HomeAssistant
 
@@ -28,7 +28,7 @@ class ProfileManager:
         DEFAULT_PROFILES_DIR.mkdir(parents=True, exist_ok=True)
         CUSTOM_PROFILES_DIR.mkdir(parents=True, exist_ok=True)
     
-    def get_available_profiles(self) -> Dict[str, Dict[str, Any]]:
+    def get_available_profiles(self) -> dict[str, dict[str, Any]]:
         """Get all available profiles."""
         profiles = {}
         
@@ -67,14 +67,14 @@ class ProfileManager:
         
         return profiles
     
-    def load_profile(self, profile_id: str) -> Optional[Dict[str, Any]]:
+    def load_profile(self, profile_id: str) -> dict[str, Any] | None:
         """Load a specific profile."""
         profiles = self.get_available_profiles()
         if profile_id in profiles:
             return profiles[profile_id]["data"]
         return None
     
-    def save_profile(self, name: str, config: Dict[str, Any], model: str = "Custom") -> str:
+    def save_profile(self, name: str, config: dict[str, Any], model: str = "Custom") -> str:
         """Save current configuration as a profile."""
         # Sanitize filename
         safe_name = re.sub(r'[^\w\s-]', '', name).strip().lower()
@@ -184,7 +184,7 @@ class ProfileManager:
         
         return False
     
-    def export_profile(self, config: Dict[str, Any], name: str = None) -> Dict[str, Any]:
+    def export_profile(self, config: dict[str, Any], name: str = None) -> dict[str, Any]:
         """Export configuration as a shareable profile."""
         if name is None:
             name = config.get("name", "Exported Profile")
@@ -198,7 +198,7 @@ class ProfileManager:
             "config": config
         }
     
-    def import_profile(self, profile_data: Dict[str, Any]) -> Optional[str]:
+    def import_profile(self, profile_data: dict[str, Any]) -> str | None:
         """Import a profile from exported data."""
         try:
             # Validate profile data
@@ -217,7 +217,7 @@ class ProfileManager:
             _LOGGER.error("Failed to import profile: %s", e)
             return None
     
-    def apply_profile_to_config(self, profile_data: Dict[str, Any], user_input: Dict[str, Any]) -> Dict[str, Any]:
+    def apply_profile_to_config(self, profile_data: dict[str, Any], user_input: dict[str, Any]) -> dict[str, Any]:
         """Apply profile data to configuration, keeping user's connection settings."""
         config = {}
         
