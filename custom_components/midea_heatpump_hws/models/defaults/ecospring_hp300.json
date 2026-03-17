@@ -1,10 +1,10 @@
 {
   "name": "EcoSpring HP300",
-  "model": "HP300",
+  "model": "HP300 (280L / 300L)",
   "manufacturer": "EcoSpring",
-  "version": "1.0",
-  "description": "Configuration for EcoSpring 300L heat pump water heater with sanitize mode support",
-  "created": "2025-01-06T00:00:00",
+  "version": "1.1",
+  "description": "Configuration for EcoSpring HP300 heat pump water heater (280L/300L variants). Register map and temperature limits validated by community testing (issue #25). Registers 108 and 109 expose heater-assist substate and sanitize-cycle detection as read-only sensors.",
+  "created": "2026-03-17T00:00:00",
   "author": "Community Contribution",
 
   "connection": {
@@ -24,7 +24,9 @@
     "condensor_temp": 103,
     "outdoor_temp": 104,
     "exhaust_temp": 105,
-    "suction_temp": 106
+    "suction_temp": 106,
+    "heater_assist_register": 108,
+    "sanitize_state_register": 109
   },
 
   "mode_values": {
@@ -50,21 +52,35 @@
 
   "temp_limits": {
     "eco": {
-      "min": 60,
+      "min": 55,
       "max": 65
     },
     "performance": {
-      "min": 60,
+      "min": 55,
       "max": 70
     },
     "electric": {
-      "min": 60,
+      "min": 55,
       "max": 70
     }
   },
 
   "defaults": {
-    "target_temperature": 65,
+    "target_temperature": 60,
     "enable_additional_sensors": true
+  },
+
+  "notes": {
+    "diagnostic_registers": {
+      "108_heater_assist": "Raw substate register. Known values: 0=idle, 13=heater assist active, 2=sanitize cycle delayed start",
+      "109_sanitize_state": "Raw substate register. Known values: 0=idle/heater assist, 32=sanitize cycle immediate, 33=sanitize cycle delayed",
+      "combined_states": {
+        "normal_idle": "108=0, 109=0",
+        "heater_assist_active": "108=13, 109=2",
+        "sanitize_immediate": "108=0, 109=32",
+        "sanitize_delayed": "108=2, 109=33"
+      },
+      "source": "Community reverse-engineering, GitHub issue #25"
+    }
   }
 }
