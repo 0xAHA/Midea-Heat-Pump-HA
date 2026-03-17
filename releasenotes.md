@@ -1,5 +1,115 @@
 # Release Notes
 
+## Version 0.2.5 - Heater Assist & Sanitize Status Sensors
+
+### ✨ New Features
+
+#### Heater Assist Binary Sensor (EcoSpring HP300 and compatible models)
+
+Some heat pump water heaters contain a resistance heating element that activates automatically alongside the heat pump compressor — this is called **heater assist**. It is distinct from:
+
+- **Electric mode** (mode value 4) — which runs the resistance element *instead of* the heat pump
+- **Performance/Hybrid mode** — which is a user-selected mode; heater assist may activate even in Eco mode if the unit decides it needs extra capacity
+
+Register 108 exposes the firmware substate that indicates whether this element is currently active. The new **Heater Assist** binary sensor shows:
+
+| State | Meaning |
+|-------|---------|
+| `Off` | Resistance element not active (register 108 = 0) |
+| `On` | Resistance element currently supplementing the heat pump (register 108 ≠ 0) |
+
+#### Sanitize Cycle Active Binary Sensor
+
+The existing **Sanitize Mode switch** (register 3) is a write-only control — you turn it on to trigger a sanitize cycle, but previously had no way to confirm the cycle was running or when it completed.
+
+Register 109 is a read-only status register that reports the active sanitize cycle phase. The new **Sanitize Cycle Active** binary sensor shows:
+
+| State | Register 109 value | Meaning |
+|-------|--------------------|---------|
+| `Off` | 0 | No sanitize cycle running |
+| `On` | 32 | Sanitize cycle actively running (immediate trigger) |
+| `On` | 33 | Sanitize cycle actively running (delayed/scheduled) |
+
+> **Note**: A value of 2 in register 109 accompanies heater assist activity and does **not** indicate a sanitize cycle.
+
+#### How to use these sensors in automations
+
+```yaml
+# Notify when a sanitize cycle completes
+automation:
+  - alias: "Notify when sanitize cycle finishes"
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.sanitize_cycle_active_192_168_1_80
+        from: "on"
+        to: "off"
+    action:
+      - service: notify.mobile_app
+        data:
+          title: "Hot Water System"
+          message: "Sanitize cycle complete — system returned to normal operation"
+
+# Alert if heater assist runs for an extended period (may indicate heat pump issue)
+automation:
+  - alias: "Alert if resistance heating runs too long"
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.heater_assist_192_168_1_80
+        to: "on"
+        for: "02:00:00"
+    action:
+      - service: notify.mobile_app
+        data:
+          title: "Hot Water System"
+          message: "Resistance heater has been running for 2+ hours — check unit"
+```
+
+### 📝 Debug Logging
+
+Both binary sensors log the raw register value alongside the derived On/Off state on every coordinator update:
+
+```
+binary_sensor: Heater Assist (192.168.1.80): register 108 raw=13 -> is_on=True
+binary_sensor: Sanitize Cycle Active (192.168.1.80): register 109 raw=32 -> is_on=True
+```
+
+Enable with:
+
+```yaml
+logger:
+  logs:
+    custom_components.midea_heatpump_hws: debug
+```
+
+### 🔧 EcoSpring HP300 Profile Updated (v1.1)
+
+- Minimum temperature corrected from **60°C to 55°C** across all modes, based on community testing (GitHub issue #25)
+- Model name updated to cover both 280L and 300L variants
+- Registers 108 and 109 added to the profile — sensors appear automatically when loading this profile
+
+### ⚠️ Upgrade Notes
+
+- **Existing EcoSpring HP300 users**: Re-run setup using the updated profile to get the corrected temperature limits and the two new sensors. Your existing entities will not change names.
+- **Other models**: No changes. The binary sensors only appear when `heater_assist_register` and/or `sanitize_state_register` are present in your loaded profile.
+- **No breaking changes**: Fully backward compatible with v0.2.4.
+
+### 📦 Files Changed
+
+- `custom_components/midea_heatpump_hws/binary_sensor.py` — New platform with `MideaBinarySensor` class
+- `custom_components/midea_heatpump_hws/const.py` — Added `CONF_HEATER_ASSIST_REGISTER`, `CONF_SANITIZE_STATE_REGISTER`; added `Platform.BINARY_SENSOR`
+- `custom_components/midea_heatpump_hws/coordinator.py` — Reads registers 108/109 as raw integers
+- `custom_components/midea_heatpump_hws/sensor.py` — Removed obsolete `MideaStateSensor` class
+- `custom_components/midea_heatpump_hws/profile_manager.py` — Propagates new registers through apply/save
+- `custom_components/midea_heatpump_hws/models/defaults/ecospring_hp300.json` — v1.1 with corrected limits and new registers
+- `custom_components/midea_heatpump_hws/manifest.json` — Version bumped to 0.2.5; `binary_sensor` added to dependencies
+- `README.md` — Updated for v0.2.5
+
+### 🙏 Acknowledgments
+
+Thanks to **tazomatalax** for the detailed register reverse-engineering documented in GitHub issue #25!
+
+---
+
 ## Version 0.2.4 - Sanitize Mode Support
 
 ### 🦠 New Features

@@ -25,8 +25,6 @@ from .const import (
     CONF_OUTDOOR_TEMP_REGISTER,
     CONF_EXHAUST_TEMP_REGISTER,
     CONF_SUCTION_TEMP_REGISTER,
-    CONF_HEATER_ASSIST_REGISTER,
-    CONF_SANITIZE_STATE_REGISTER,
 )
 from .coordinator import MideaModbusCoordinator
 
@@ -41,12 +39,12 @@ async def async_setup_entry(
     """Set up Midea temperature sensors from config entry."""
     coordinator = hass.data[DOMAIN][config_entry.entry_id]["coordinator"]
     config = hass.data[DOMAIN][config_entry.entry_id]["config"]
-    
+
     entities = []
-    
+
     # Include host in entity names to make them unique
     host_suffix = f" ({config['host']})"
-    
+
     # Main temperature sensor
     entities.append(
         MideaTemperatureSensor(
@@ -58,7 +56,7 @@ async def async_setup_entry(
             use_scaling=True
         )
     )
-    
+
     # Target temperature sensor (read-only)
     entities.append(
         MideaTemperatureSensor(
@@ -70,7 +68,7 @@ async def async_setup_entry(
             use_scaling=False
         )
     )
-    
+
     # Additional temperature sensors if enabled
     if config.get(CONF_ENABLE_ADDITIONAL_SENSORS, True):
         sensor_configs = [
@@ -81,7 +79,7 @@ async def async_setup_entry(
             ("exhaust_temp", f"Exhaust Gas Temperature{host_suffix}", config.get(CONF_EXHAUST_TEMP_REGISTER), False),
             ("suction_temp", f"Suction Temperature{host_suffix}", config.get(CONF_SUCTION_TEMP_REGISTER), False),
         ]
-        
+
         for sensor_id, name, register, use_scaling in sensor_configs:
             if register is not None:
                 entities.append(
@@ -94,23 +92,6 @@ async def async_setup_entry(
                         use_scaling
                     )
                 )
-    
-    # Diagnostic state sensors (raw integer, no scaling)
-    diagnostic_configs = [
-        (CONF_HEATER_ASSIST_REGISTER, "heater_assist_raw", f"Heater Assist State{host_suffix}"),
-        (CONF_SANITIZE_STATE_REGISTER, "sanitize_state_raw", f"Sanitize State{host_suffix}"),
-    ]
-    for conf_key, data_key, name in diagnostic_configs:
-        if config.get(conf_key) is not None:
-            entities.append(
-                MideaStateSensor(
-                    coordinator,
-                    config,
-                    data_key,
-                    name,
-                    config[conf_key],
-                )
-            )
 
     async_add_entities(entities)
 
@@ -133,7 +114,7 @@ class MideaTemperatureSensor(CoordinatorEntity, SensorEntity):
         self._sensor_id = sensor_id
         self._register = register
         self._use_scaling = use_scaling
-        
+
         # Entity attributes - name already includes host for uniqueness
         self._attr_name = name
         self._attr_unique_id = f"midea_{config['host']}_{config[CONF_MODBUS_UNIT]}_{sensor_id}"
@@ -155,7 +136,6 @@ class MideaTemperatureSensor(CoordinatorEntity, SensorEntity):
     def native_value(self) -> Any:
         """Return the state of the sensor."""
         if self.coordinator.data:
-            # Get the value from coordinator data
             return self.coordinator.data.get(self._sensor_id)
         return None
 
@@ -163,57 +143,6 @@ class MideaTemperatureSensor(CoordinatorEntity, SensorEntity):
     def available(self) -> bool:
         """Return if entity is available."""
         return self.coordinator.last_update_success and self._sensor_id in (self.coordinator.data or {})
-
-    @callback
-    def _handle_coordinator_update(self) -> None:
-        """Handle updated data from the coordinator."""
-        self.async_write_ha_state()
-
-
-class MideaStateSensor(CoordinatorEntity, SensorEntity):
-    """Read-only integer sensor for diagnostic/substate registers (e.g. heater assist, sanitize state)."""
-
-    def __init__(
-        self,
-        coordinator: MideaModbusCoordinator,
-        config: dict,
-        data_key: str,
-        name: str,
-        register: int,
-    ):
-        """Initialize the state sensor."""
-        super().__init__(coordinator)
-        self._config = config
-        self._data_key = data_key
-        self._register = register
-
-        self._attr_name = name
-        self._attr_unique_id = f"midea_{config['host']}_{config[CONF_MODBUS_UNIT]}_{data_key}"
-        self._attr_device_class = None
-        self._attr_state_class = SensorStateClass.MEASUREMENT
-        self._attr_native_unit_of_measurement = None
-
-    @property
-    def device_info(self):
-        """Return device info to link this sensor to the main device."""
-        return {
-            "identifiers": {(DOMAIN, f"{self._config['host']}_{self._config[CONF_MODBUS_UNIT]}")},
-            "name": f"Midea Heat Pump ({self._config['host']})",
-            "manufacturer": "Midea",
-            "model": "Heat Pump Water Heater",
-        }
-
-    @property
-    def native_value(self) -> Any:
-        """Return the raw register value."""
-        if self.coordinator.data:
-            return self.coordinator.data.get(self._data_key)
-        return None
-
-    @property
-    def available(self) -> bool:
-        """Return if entity is available."""
-        return self.coordinator.last_update_success and self._data_key in (self.coordinator.data or {})
 
     @callback
     def _handle_coordinator_update(self) -> None:

@@ -20,6 +20,7 @@ _LOGGER = logging.getLogger(__name__)
 
 # Define platforms here directly to avoid import issues
 PLATFORMS: list[Platform] = [
+    Platform.BINARY_SENSOR,
     Platform.WATER_HEATER,
     Platform.SENSOR,
     Platform.SWITCH,

@@ -3,7 +3,7 @@
 *Transform your Midea/OEM heat pump hot water system into a smart, Home Assistant-controlled water heater entity!*
 
 ![HACS Badge](https://img.shields.io/badge/HACS-Custom-orange.svg)
-![Version](https://img.shields.io/badge/Version-0.2.4-blue.svg)
+![Version](https://img.shields.io/badge/Version-0.2.5-blue.svg)
 [![GitHub Issues](https://img.shields.io/github/issues/0xAHA/Midea-Heat-Pump-HA.svg)](https://github.com/0xAHA/Midea-Heat-Pump-HA/issues)
 
 Help keep this integration alive! Your support is much appreciated :)
@@ -19,6 +19,7 @@ This integration creates a fully functional **water heater entity** in Home Assi
 - ✅ **Profile System**: Load from pre-configured profiles or save your own for easy setup and sharing
 - ✅ **UI Configuration**: Configure entirely through the Home Assistant UI - no YAML required!
 - ✅ **Sanitize/Sterilize Mode**: Dedicated switch for hot water sanitization (heats to 65°C to kill bacteria)
+- ✅ **Heater Assist & Sanitize Status**: Binary sensors showing whether the resistance element is active and whether a sanitize cycle is running
 - ✅ **Mode-Specific Temperature Limits**: Enforces different min/max temperatures per operation mode
 - ✅ **Control operation modes**: Off, Eco, Performance (Hybrid), Electric (E-Heater)
 - ✅ **Set target temperature** via direct Modbus with automatic range enforcement
@@ -240,6 +241,8 @@ Exported profiles can be:
 | Outdoor Temp | 104 | T4 sensor | Configurable |
 | Exhaust Gas Temp | 105 | Tp sensor | No scaling |
 | Suction Temp | 106 | Th sensor | Configurable |
+| Heater Assist State | 108 | Resistance element substate (read-only) | None |
+| Sanitize Cycle State | 109 | Sanitize cycle substate (read-only) | None |
 
 **Note**: Your heat pump model may use different registers. Use the configuration UI to adjust as needed, then save as a custom profile.
 
@@ -378,25 +381,23 @@ automation:
 
 ---
 
-## 🚀 What's New in v0.2.4
+## 🚀 What's New in v0.2.5
 
-### Sanitize/Sterilize Mode Support (Optional Feature)
-- **Optional sanitize switch** for models that support hot water sanitization
-- **Hardware-controlled** - Integration only enables/disables, heat pump handles the rest
-- **Simple on/off control** via switch entity (register 3)
-- **Not enabled by default** - Only appears if you configure the sterilize register
-- **EcoSpring HP300 profile** added with sanitize support pre-configured
+### Heater Assist & Sanitize Cycle Binary Sensors (EcoSpring HP300)
+- **Heater Assist binary sensor** - shows `On` when the resistance heating element is actively supplementing the heat pump (register 108 ≠ 0)
+- **Sanitize Cycle Active binary sensor** - shows `On` when a sanitize cycle is in progress (register 109 = 32 or 33), distinct from the write-only sterilize switch
+- Both sensors use the `running` device class for clean On/Off display
+- Raw register values are logged at DEBUG level on every update for diagnostics
+- Sensors only appear when the profile includes `heater_assist_register` and `sanitize_state_register`
 
-### Bug Fixes & Improvements
-- Added Python cache files to .gitignore
-- Improved register documentation in README
-- Enhanced modbus_test.py with sterilize register support
+### EcoSpring HP300 Profile Updated (v1.1)
+- Minimum temperature corrected from 60°C to **55°C** across all modes (community-validated)
+- Model updated to cover both 280L and 300L variants
+- Registers 108 and 109 added with documented substate values
 
-### Previous Features (v0.2.3)
-- Profile system with pre-configured models
-- Multiple device support with unique entity naming
-- Export/import profiles for community sharing
-- Enhanced services for profile management
+### Previous Features (v0.2.4)
+- Sanitize/Sterilize Mode switch (register 3)
+- EcoSpring HP300 profile added
 
 ---
 
@@ -459,7 +460,7 @@ logger:
 - [x] **Profile system** ✅ Completed in v0.2.3
 - [x] **Multiple device support** ✅ Completed in v0.2.3
 - [ ] **Community profile library** (shared configurations)
-- [ ] **Enhanced diagnostics** (connection status, detailed error reporting)
+- [x] **Enhanced diagnostics** ✅ Completed in v0.2.5 (heater assist & sanitize cycle binary sensors)
 - [ ] **Energy monitoring** (power consumption tracking)
 - [ ] **Advanced scheduling** (built-in time/temperature profiles)
 
