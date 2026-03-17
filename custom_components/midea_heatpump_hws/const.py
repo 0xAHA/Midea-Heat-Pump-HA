@@ -3,7 +3,7 @@ from homeassistant.const import Platform
 
 DOMAIN = "midea_heatpump_hws"
 
-PLATFORMS: list[Platform] = [Platform.WATER_HEATER, Platform.SENSOR, Platform.SWITCH, Platform.SELECT]
+PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.WATER_HEATER, Platform.SENSOR, Platform.SWITCH, Platform.SELECT]
 
 # Default register addresses
 DEFAULT_POWER_REGISTER = 0
@@ -72,3 +72,5 @@ CONF_OUTDOOR_TEMP_REGISTER = "outdoor_temp_register"
 CONF_EXHAUST_TEMP_REGISTER = "exhaust_temp_register"
 CONF_SUCTION_TEMP_REGISTER = "suction_temp_register"
 CONF_ENABLE_ADDITIONAL_SENSORS = "enable_additional_sensors"
+CONF_HEATER_ASSIST_REGISTER = "heater_assist_register"
+CONF_SANITIZE_STATE_REGISTER = "sanitize_state_register"

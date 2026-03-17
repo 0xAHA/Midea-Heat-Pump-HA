@@ -106,7 +106,9 @@ class ProfileManager:
                 "condensor_temp": config.get("condensor_temp_register", 103),
                 "outdoor_temp": config.get("outdoor_temp_register", 104),
                 "exhaust_temp": config.get("exhaust_temp_register", 105),
-                "suction_temp": config.get("suction_temp_register", 106)
+                "suction_temp": config.get("suction_temp_register", 106),
+                **({} if config.get("heater_assist_register") is None else {"heater_assist_register": config["heater_assist_register"]}),
+                **({} if config.get("sanitize_state_register") is None else {"sanitize_state_register": config["sanitize_state_register"]}),
             },
             
             "mode_values": {
@@ -239,7 +241,12 @@ class ProfileManager:
         config["outdoor_temp_register"] = registers.get("outdoor_temp", 104)
         config["exhaust_temp_register"] = registers.get("exhaust_temp", 105)
         config["suction_temp_register"] = registers.get("suction_temp", 106)
-        
+        # Optional diagnostic registers (only set if present in profile)
+        if "heater_assist_register" in registers:
+            config["heater_assist_register"] = registers["heater_assist_register"]
+        if "sanitize_state_register" in registers:
+            config["sanitize_state_register"] = registers["sanitize_state_register"]
+
         # Apply mode values
         mode_values = profile_data.get("mode_values", {})
         config["eco_mode_value"] = mode_values.get("eco", 1)

@@ -39,12 +39,12 @@ async def async_setup_entry(
     """Set up Midea temperature sensors from config entry."""
     coordinator = hass.data[DOMAIN][config_entry.entry_id]["coordinator"]
     config = hass.data[DOMAIN][config_entry.entry_id]["config"]
-    
+
     entities = []
-    
+
     # Include host in entity names to make them unique
     host_suffix = f" ({config['host']})"
-    
+
     # Main temperature sensor
     entities.append(
         MideaTemperatureSensor(
@@ -56,7 +56,7 @@ async def async_setup_entry(
             use_scaling=True
         )
     )
-    
+
     # Target temperature sensor (read-only)
     entities.append(
         MideaTemperatureSensor(
@@ -68,7 +68,7 @@ async def async_setup_entry(
             use_scaling=False
         )
     )
-    
+
     # Additional temperature sensors if enabled
     if config.get(CONF_ENABLE_ADDITIONAL_SENSORS, True):
         sensor_configs = [
@@ -79,7 +79,7 @@ async def async_setup_entry(
             ("exhaust_temp", f"Exhaust Gas Temperature{host_suffix}", config.get(CONF_EXHAUST_TEMP_REGISTER), False),
             ("suction_temp", f"Suction Temperature{host_suffix}", config.get(CONF_SUCTION_TEMP_REGISTER), False),
         ]
-        
+
         for sensor_id, name, register, use_scaling in sensor_configs:
             if register is not None:
                 entities.append(
@@ -92,7 +92,7 @@ async def async_setup_entry(
                         use_scaling
                     )
                 )
-    
+
     async_add_entities(entities)
 
 
@@ -114,7 +114,7 @@ class MideaTemperatureSensor(CoordinatorEntity, SensorEntity):
         self._sensor_id = sensor_id
         self._register = register
         self._use_scaling = use_scaling
-        
+
         # Entity attributes - name already includes host for uniqueness
         self._attr_name = name
         self._attr_unique_id = f"midea_{config['host']}_{config[CONF_MODBUS_UNIT]}_{sensor_id}"
@@ -136,7 +136,6 @@ class MideaTemperatureSensor(CoordinatorEntity, SensorEntity):
     def native_value(self) -> Any:
         """Return the state of the sensor."""
         if self.coordinator.data:
-            # Get the value from coordinator data
             return self.coordinator.data.get(self._sensor_id)
         return None
 

@@ -35,6 +35,8 @@ from .const import (
     CONF_OUTDOOR_TEMP_REGISTER,
     CONF_EXHAUST_TEMP_REGISTER,
     CONF_SUCTION_TEMP_REGISTER,
+    CONF_HEATER_ASSIST_REGISTER,
+    CONF_SANITIZE_STATE_REGISTER,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -100,6 +102,10 @@ class MideaModbusCoordinator(DataUpdateCoordinator):
                 "exhaust_temp": config.get(CONF_EXHAUST_TEMP_REGISTER),
                 "suction_temp": config.get(CONF_SUCTION_TEMP_REGISTER),
             }
+
+        # Diagnostic state registers (raw integer, no scaling)
+        self.heater_assist_register = config.get(CONF_HEATER_ASSIST_REGISTER)
+        self.sanitize_state_register = config.get(CONF_SANITIZE_STATE_REGISTER)
 
         self._client: AsyncModbusTcpClient | None = None
         self._lock = asyncio.Lock()
@@ -250,6 +256,27 @@ class MideaModbusCoordinator(DataUpdateCoordinator):
                                 _LOGGER.debug("Failed to read %s register %s : %s", sensor_name, register, result)
                         except Exception as ex:
                             _LOGGER.exception("Error reading %s: %s", sensor_name, ex)
+
+                # Read diagnostic state registers (raw integer, no scaling)
+                for reg_name, register in [
+                    ("heater_assist_raw", self.heater_assist_register),
+                    ("sanitize_state_raw", self.sanitize_state_register),
+                ]:
+                    if register is None:
+                        continue
+                    try:
+                        result = await self._client.read_holding_registers(
+                            address=register,
+                            count=1,
+                            device_id=self.modbus_unit
+                        )
+                        if not result.isError():
+                            data[reg_name] = result.registers[0]
+                            _LOGGER.debug("Read %s register %s -> %s", reg_name, register, data[reg_name])
+                        else:
+                            _LOGGER.debug("Failed to read %s register %s: %s", reg_name, register, result)
+                    except Exception as ex:
+                        _LOGGER.exception("Error reading %s: %s", reg_name, ex)
 
             _LOGGER.debug("Modbus data updated: %s", data)
             return data
