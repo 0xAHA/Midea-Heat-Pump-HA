@@ -236,6 +236,7 @@ class ProfileManager:
         config["mode_register"] = registers.get("mode", 1)
         config["temp_register"] = registers.get("current_temp", 102)
         config["target_temp_register"] = registers.get("target_temp", 2)
+        config["sterilize_register"] = registers.get("sterilize", 3)
         config["tank_top_temp_register"] = registers.get("tank_top_temp", 101)
         config["tank_bottom_temp_register"] = registers.get("tank_bottom_temp", 102)
         config["condensor_temp_register"] = registers.get("condensor_temp", 103)

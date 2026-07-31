@@ -197,5 +197,7 @@ class MideaHeaterAssistSwitch(CoordinatorEntity, SwitchEntity):
         await self.coordinator.write_register("heater_assist_trigger", 1)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        """Off writes are not directly supported by the controller, warn user."""
-        _LOGGER.warning("Direct off-toggle for E-heater assist is not supported by the controller. It will automatically self-clear when the target temperature is reached.")
+        """Turn off E-heater assist by resetting power state to clear R4 trigger."""
+        _LOGGER.info("Resetting power state to turn off manual E-heater assist")
+        await self.coordinator.write_register("power_state", False)
+        await self.coordinator.write_register("power_state", True)
