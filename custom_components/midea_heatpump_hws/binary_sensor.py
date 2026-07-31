@@ -38,17 +38,35 @@ async def async_setup_entry(
     entities = []
 
     if config.get(CONF_HEATER_ASSIST_REGISTER) is not None:
-        entities.append(
+        entities.extend([
             MideaBinarySensor(
                 coordinator=coordinator,
                 config=config,
                 data_key="heater_assist_raw",
-                name=f"Heater Assist{host_suffix}",
+                name=f"Compressor Status{host_suffix}",
                 register=config[CONF_HEATER_ASSIST_REGISTER],
                 device_class=BinarySensorDeviceClass.RUNNING,
-                is_on_fn=lambda v: v != 0,
+                is_on_fn=lambda v: bool(v & 1),
+            ),
+            MideaBinarySensor(
+                coordinator=coordinator,
+                config=config,
+                data_key="heater_assist_raw",
+                name=f"Fan Status{host_suffix}",
+                register=config[CONF_HEATER_ASSIST_REGISTER],
+                device_class=BinarySensorDeviceClass.RUNNING,
+                is_on_fn=lambda v: bool(v & 4),
+            ),
+            MideaBinarySensor(
+                coordinator=coordinator,
+                config=config,
+                data_key="heater_assist_raw",
+                name=f"Electric Booster Status{host_suffix}",
+                register=config[CONF_HEATER_ASSIST_REGISTER],
+                device_class=BinarySensorDeviceClass.RUNNING,
+                is_on_fn=lambda v: bool(v & 8),
             )
-        )
+        ])
 
     if config.get(CONF_SANITIZE_STATE_REGISTER) is not None:
         entities.append(

@@ -37,6 +37,7 @@ from .const import (
     CONF_SUCTION_TEMP_REGISTER,
     CONF_HEATER_ASSIST_REGISTER,
     CONF_SANITIZE_STATE_REGISTER,
+    CONF_HEATER_ASSIST_TRIGGER_REGISTER,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -106,6 +107,7 @@ class MideaModbusCoordinator(DataUpdateCoordinator):
         # Diagnostic state registers (raw integer, no scaling)
         self.heater_assist_register = config.get(CONF_HEATER_ASSIST_REGISTER)
         self.sanitize_state_register = config.get(CONF_SANITIZE_STATE_REGISTER)
+        self.heater_assist_trigger_register = config.get(CONF_HEATER_ASSIST_TRIGGER_REGISTER)
 
         self._client: AsyncModbusTcpClient | None = None
         self._lock = asyncio.Lock()
@@ -261,6 +263,7 @@ class MideaModbusCoordinator(DataUpdateCoordinator):
                 for reg_name, register in [
                     ("heater_assist_raw", self.heater_assist_register),
                     ("sanitize_state_raw", self.sanitize_state_register),
+                    ("heater_assist_trigger_raw", self.heater_assist_trigger_register),
                 ]:
                     if register is None:
                         continue
@@ -390,6 +393,18 @@ class MideaModbusCoordinator(DataUpdateCoordinator):
                             else:
                                 _LOGGER.debug("Successfully wrote sterilize mode = %s", params)
 
+                    elif operation == "heater_assist_trigger":
+                        if self.heater_assist_trigger_register is not None:
+                            result = await self._client.write_register(
+                                address=self.heater_assist_trigger_register,
+                                value=params,
+                                device_id=self.modbus_unit
+                            )
+                            if result.isError():
+                                _LOGGER.error("Failed to write heater assist trigger: %s", result)
+                            else:
+                                _LOGGER.debug("Successfully wrote heater assist trigger = %s", params)
+
                     elif operation == "operation_mode":
                         # Handle water heater operation mode changes (now lowercase!)
                         if params == "off":  # lowercase!
@@ -487,6 +502,17 @@ class MideaModbusCoordinator(DataUpdateCoordinator):
                         if not result.isError() and result.registers:
                             self.data["sterilize_mode"] = bool(result.registers[0])
                             _LOGGER.debug("Read back sterilize mode: %s", self.data["sterilize_mode"])
+
+                elif operation == "heater_assist_trigger":
+                    if self.heater_assist_trigger_register is not None:
+                        result = await self._client.read_holding_registers(
+                            address=self.heater_assist_trigger_register,
+                            count=1,
+                            device_id=self.modbus_unit
+                        )
+                        if not result.isError() and result.registers:
+                            self.data["heater_assist_trigger_raw"] = result.registers[0]
+                            _LOGGER.debug("Read back heater assist trigger: %s", self.data["heater_assist_trigger_raw"])
 
                 elif operation == "operation_mode":
                     # After setting operation mode, read both power and mode

@@ -8,7 +8,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, CONF_MODBUS_UNIT
+from .const import DOMAIN, CONF_MODBUS_UNIT, CONF_HEATER_ASSIST_TRIGGER_REGISTER
 from .coordinator import MideaModbusCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -32,6 +32,10 @@ async def async_setup_entry(
     # Add sterilize switch if register is configured
     if config.get("sterilize_register") is not None:
         entities.append(MideaSterilizeSwitch(coordinator, config, host_suffix))
+
+    # Add manual heater assist switch if register is configured
+    if config.get(CONF_HEATER_ASSIST_TRIGGER_REGISTER) is not None:
+        entities.append(MideaHeaterAssistSwitch(coordinator, config, host_suffix))
 
     async_add_entities(entities)
 
@@ -142,3 +146,52 @@ class MideaSterilizeSwitch(CoordinatorEntity, SwitchEntity):
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
         self.async_write_ha_state()
+
+
+class MideaHeaterAssistSwitch(CoordinatorEntity, SwitchEntity):
+    """Representation of the manual E-Heater assist trigger switch."""
+
+    def __init__(
+        self,
+        coordinator: MideaModbusCoordinator,
+        config: dict,
+        host_suffix: str
+    ):
+        """Initialize the heater assist switch."""
+        super().__init__(coordinator)
+        self._config = config
+
+        # Entity attributes - include host for uniqueness
+        self._attr_name = f"Manual Heater Assist{host_suffix}"
+        self._attr_unique_id = f"midea_{config['host']}_{config[CONF_MODBUS_UNIT]}_heater_assist_trigger"
+        self._attr_icon = "mdi:fire"
+
+    @property
+    def device_info(self):
+        """Return device info to link this switch to the main device."""
+        return {
+            "identifiers": {(DOMAIN, f"{self._config['host']}_{self._config[CONF_MODBUS_UNIT]}")},
+            "name": f"Midea Heat Pump ({self._config['host']})",
+            "manufacturer": "Midea",
+            "model": "Heat Pump Water Heater",
+        }
+
+    @property
+    def is_on(self) -> bool:
+        """Return true if e-heater is triggered."""
+        if self.coordinator.data:
+            return self.coordinator.data.get("heater_assist_trigger_raw") == 1
+        return False
+
+    @property
+    def available(self) -> bool:
+        """Return if entity is available."""
+        return self.coordinator.last_update_success
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Trigger manual heater assist."""
+        await self.coordinator.write_register("heater_assist_trigger", 1)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        """Off writes are not directly supported by the controller, warn user."""
+        _LOGGER.warning("Direct off-toggle for E-heater assist is not supported by the controller. It will automatically self-clear when the target temperature is reached.")
