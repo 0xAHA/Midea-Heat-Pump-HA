@@ -22,7 +22,8 @@ from .coordinator import MideaModbusCoordinator
 _LOGGER = logging.getLogger(__name__)
 
 # Register 109 values that indicate an active sanitize cycle
-_SANITIZE_ACTIVE_VALUES = {32, 33}
+_SANITIZE_ACTIVE_VALUES = {32}
+_SANITIZE_SCHEDULED_VALUES = {33}
 
 
 async def async_setup_entry(
@@ -43,15 +44,19 @@ async def async_setup_entry(
                 coordinator=coordinator,
                 config=config,
                 data_key="heater_assist_raw",
-                name=f"Heater Assist{host_suffix}",
+                name=f"Electric Booster Active{host_suffix}",
                 register=config[CONF_HEATER_ASSIST_REGISTER],
                 device_class=BinarySensorDeviceClass.RUNNING,
-                is_on_fn=lambda v: v != 0,
+                # R108 bit 3 (value 8) is set when the electric element relay is energised.
+                # Values 0 and 2 represent idle/standby states; 13 = compressor+fan+element
+                # running together in Hybrid. Using & 8 cleanly isolates the element state.
+                is_on_fn=lambda v: bool(v & 8),
+                unique_id_suffix="heater_assist_raw",
             )
         )
 
     if config.get(CONF_SANITIZE_STATE_REGISTER) is not None:
-        entities.append(
+        entities.extend([
             MideaBinarySensor(
                 coordinator=coordinator,
                 config=config,
@@ -60,8 +65,19 @@ async def async_setup_entry(
                 register=config[CONF_SANITIZE_STATE_REGISTER],
                 device_class=BinarySensorDeviceClass.RUNNING,
                 is_on_fn=lambda v: v in _SANITIZE_ACTIVE_VALUES,
+                unique_id_suffix="sanitize_state_raw",
+            ),
+            MideaBinarySensor(
+                coordinator=coordinator,
+                config=config,
+                data_key="sanitize_state_raw",
+                name=f"Sanitize Cycle Scheduled{host_suffix}",
+                register=config[CONF_SANITIZE_STATE_REGISTER],
+                device_class=BinarySensorDeviceClass.RUNNING,
+                is_on_fn=lambda v: v in _SANITIZE_SCHEDULED_VALUES,
+                unique_id_suffix="sanitize_scheduled",
             )
-        )
+        ])
 
     async_add_entities(entities)
 
@@ -78,6 +94,7 @@ class MideaBinarySensor(CoordinatorEntity, BinarySensorEntity):
         register: int,
         device_class: BinarySensorDeviceClass,
         is_on_fn,
+        unique_id_suffix: str | None = None,
     ) -> None:
         """Initialize the binary sensor."""
         super().__init__(coordinator)
@@ -87,7 +104,8 @@ class MideaBinarySensor(CoordinatorEntity, BinarySensorEntity):
         self._is_on_fn = is_on_fn
 
         self._attr_name = name
-        self._attr_unique_id = f"midea_{config['host']}_{config[CONF_MODBUS_UNIT]}_{data_key}"
+        suffix = unique_id_suffix or data_key
+        self._attr_unique_id = f"midea_{config['host']}_{config[CONF_MODBUS_UNIT]}_{suffix}"
         self._attr_device_class = device_class
 
     @property

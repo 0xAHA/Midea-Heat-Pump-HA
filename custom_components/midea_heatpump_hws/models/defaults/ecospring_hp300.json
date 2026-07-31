@@ -26,7 +26,8 @@
     "exhaust_temp": 105,
     "suction_temp": 106,
     "heater_assist_register": 108,
-    "sanitize_state_register": 109
+    "sanitize_state_register": 109,
+    "heater_assist_trigger_register": 4
   },
 
   "mode_values": {
