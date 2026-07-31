@@ -1,5 +1,37 @@
 # Release Notes
 
+## Version 0.2.6 (pre-release) - Manual E-Heater Assist Switch
+
+> **Pre-release**: pending further live end-to-end validation on EcoSpring HP300 hardware. Please report any issues.
+
+### ✨ New Features
+
+#### Manual E-Heater Assist Switch (EcoSpring HP300)
+
+Register 4 lets you manually trigger the resistance heating element (E-heater) instead of waiting for the heat pump to decide it's needed. The new **Manual Heater Assist** switch:
+
+- Turns the E-heater on by writing `1` to register 4.
+- Latches until the target setpoint is reached — the controller rejects a direct write of `0`, so turning the switch off in Home Assistant instead briefly cycles the unit's power (off then on) to clear the latch. This is a hardware limitation, not a bug: expect a short power interruption when toggling this off.
+- Only appears for profiles that declare both `heater_assist_trigger_register` and `heater_assist_register` — currently EcoSpring HP300 only. It will not be created for Midea 170L/Chromagen or other profiles that haven't validated register 4.
+
+#### Sanitize Cycle Scheduled Binary Sensor
+
+Register 109 is now decoded into two separate binary sensors instead of one:
+
+| Sensor | Register 109 value | Meaning |
+|--------|--------------------|---------|
+| Sanitize Cycle Active | 32 | Sanitize cycle actively running (immediate trigger) |
+| Sanitize Cycle Scheduled | 33 | Sanitize cycle scheduled/pending (delayed trigger) |
+
+#### Electric Booster Active — refined detection
+
+The existing Heater Assist sensor (now labeled **Electric Booster Active**) uses `register 108 & 8` to detect the resistance element specifically, rather than any non-zero value — this avoids false positives from standby/delayed-start substates that also produce a non-zero reading.
+
+### 🐛 Fixes
+
+- Loading a profile via "Load from Profile" now correctly propagates `sterilize_register` from the profile JSON, matching how the other optional diagnostic registers are handled. Previously it was only ever set via manual configuration.
+- Existing `heater_assist_raw`/`sanitize_state_raw` sensor unique_ids are unchanged, so current EcoSpring installs won't see orphaned entities from this update.
+
 ## Version 0.2.5 - Heater Assist & Sanitize Status Sensors
 
 ### ✨ New Features
