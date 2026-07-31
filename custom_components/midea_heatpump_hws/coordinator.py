@@ -107,7 +107,7 @@ class MideaModbusCoordinator(DataUpdateCoordinator):
         # Diagnostic state registers (raw integer, no scaling)
         self.heater_assist_register = config.get(CONF_HEATER_ASSIST_REGISTER)
         self.sanitize_state_register = config.get(CONF_SANITIZE_STATE_REGISTER)
-        self.heater_assist_trigger_register = config.get(CONF_HEATER_ASSIST_TRIGGER_REGISTER)
+        self.heater_assist_trigger_register = config.get(CONF_HEATER_ASSIST_TRIGGER_REGISTER, 4)
 
         self._client: AsyncModbusTcpClient | None = None
         self._lock = asyncio.Lock()

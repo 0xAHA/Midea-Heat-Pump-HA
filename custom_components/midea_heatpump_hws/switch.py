@@ -30,11 +30,11 @@ async def async_setup_entry(
     entities = [MideaPowerSwitch(coordinator, config, host_suffix)]
 
     # Add sterilize switch if register is configured
-    if config.get("sterilize_register") is not None:
+    if coordinator.sterilize_register is not None:
         entities.append(MideaSterilizeSwitch(coordinator, config, host_suffix))
 
     # Add manual heater assist switch if register is configured
-    if config.get(CONF_HEATER_ASSIST_TRIGGER_REGISTER) is not None:
+    if coordinator.heater_assist_trigger_register is not None:
         entities.append(MideaHeaterAssistSwitch(coordinator, config, host_suffix))
 
     async_add_entities(entities)
