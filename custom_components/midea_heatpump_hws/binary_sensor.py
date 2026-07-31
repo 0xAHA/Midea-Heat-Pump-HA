@@ -39,38 +39,21 @@ async def async_setup_entry(
     entities = []
 
     if config.get(CONF_HEATER_ASSIST_REGISTER) is not None:
-        entities.extend([
+        entities.append(
             MideaBinarySensor(
                 coordinator=coordinator,
                 config=config,
                 data_key="heater_assist_raw",
-                name=f"Compressor Status{host_suffix}",
+                name=f"Electric Booster Active{host_suffix}",
                 register=config[CONF_HEATER_ASSIST_REGISTER],
                 device_class=BinarySensorDeviceClass.RUNNING,
-                is_on_fn=lambda v: bool(v & 1),
-                unique_id_suffix="compressor_status",
-            ),
-            MideaBinarySensor(
-                coordinator=coordinator,
-                config=config,
-                data_key="heater_assist_raw",
-                name=f"Fan Status{host_suffix}",
-                register=config[CONF_HEATER_ASSIST_REGISTER],
-                device_class=BinarySensorDeviceClass.RUNNING,
-                is_on_fn=lambda v: bool(v & 4),
-                unique_id_suffix="fan_status",
-            ),
-            MideaBinarySensor(
-                coordinator=coordinator,
-                config=config,
-                data_key="heater_assist_raw",
-                name=f"Electric Booster Status{host_suffix}",
-                register=config[CONF_HEATER_ASSIST_REGISTER],
-                device_class=BinarySensorDeviceClass.RUNNING,
+                # R108 bit 3 (value 8) is set when the electric element relay is energised.
+                # Values 0 and 2 represent idle/standby states; 13 = compressor+fan+element
+                # running together in Hybrid. Using & 8 cleanly isolates the element state.
                 is_on_fn=lambda v: bool(v & 8),
                 unique_id_suffix="electric_booster_status",
             )
-        ])
+        )
 
     if config.get(CONF_SANITIZE_STATE_REGISTER) is not None:
         entities.extend([
