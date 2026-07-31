@@ -51,7 +51,7 @@ async def async_setup_entry(
                 # Values 0 and 2 represent idle/standby states; 13 = compressor+fan+element
                 # running together in Hybrid. Using & 8 cleanly isolates the element state.
                 is_on_fn=lambda v: bool(v & 8),
-                unique_id_suffix="electric_booster_status",
+                unique_id_suffix="heater_assist_raw",
             )
         )
 
@@ -65,7 +65,7 @@ async def async_setup_entry(
                 register=config[CONF_SANITIZE_STATE_REGISTER],
                 device_class=BinarySensorDeviceClass.RUNNING,
                 is_on_fn=lambda v: v in _SANITIZE_ACTIVE_VALUES,
-                unique_id_suffix="sanitize_active",
+                unique_id_suffix="sanitize_state_raw",
             ),
             MideaBinarySensor(
                 coordinator=coordinator,

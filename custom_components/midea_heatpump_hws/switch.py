@@ -33,8 +33,12 @@ async def async_setup_entry(
     if coordinator.sterilize_register is not None:
         entities.append(MideaSterilizeSwitch(coordinator, config, host_suffix))
 
-    # Add manual heater assist switch if register is configured
-    if coordinator.heater_assist_trigger_register is not None:
+    # Add manual heater assist switch only if the profile exposes both the write
+    # trigger and the R108 diagnostic register it is functionally paired with.
+    if (
+        coordinator.heater_assist_trigger_register is not None
+        and coordinator.heater_assist_register is not None
+    ):
         entities.append(MideaHeaterAssistSwitch(coordinator, config, host_suffix))
 
     async_add_entities(entities)
