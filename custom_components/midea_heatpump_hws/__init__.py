@@ -49,8 +49,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Create the coordinator
     coordinator = MideaModbusCoordinator(hass, entry.data)
     
-    # Fetch initial data
-    await coordinator.async_config_entry_first_refresh()
+    # Fetch initial data (release any shared serial link if setup is retried)
+    try:
+        await coordinator.async_config_entry_first_refresh()
+    except Exception:
+        await coordinator.async_shutdown()
+        raise
     
     # Store coordinator and config
     hass.data[DOMAIN][entry.entry_id] = {

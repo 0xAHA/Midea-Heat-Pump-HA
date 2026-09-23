@@ -5,10 +5,12 @@
         "title": "Setup Method",
         "description": "Choose how to configure your water heater",
         "data": {
-          "setup_method": "Configuration Method"
+          "setup_method": "Configuration Method",
+          "connection_type": "Connection Type"
         },
         "data_description": {
-          "setup_method": "Load from a pre-configured profile or configure manually"
+          "setup_method": "Load from a pre-configured profile or configure manually",
+          "connection_type": "Network (TCP) adapter such as the EW11-A, or a serial port (USB RS485 / ESPHome serial proxy)"
         }
       },
       "load_profile": {
@@ -17,12 +19,22 @@
         "data": {
           "profile": "Device Profile",
           "host": "Host",
-          "name": "Name"
+          "name": "Name",
+          "serial_port": "Serial Port",
+          "baudrate": "Baud Rate",
+          "parity": "Parity",
+          "bytesize": "Data Bits",
+          "stopbits": "Stop Bits"
         },
         "data_description": {
           "profile": "Pre-configured settings for your water heater model",
           "host": "IP address of your RS485-WiFi adapter",
-          "name": "Friendly name for your water heater"
+          "name": "Friendly name for your water heater",
+          "serial_port": "USB RS485 adapter or ESPHome serial proxy (e.g. Home Assistant Connect AUX-2)",
+          "baudrate": "Must match the heat pump (usually 9600)",
+          "parity": "Usually None",
+          "bytesize": "Usually 8",
+          "stopbits": "Usually 1"
         }
       },
       "connection": {
@@ -37,6 +49,28 @@
         "data_description": {
           "host": "IP address of your RS485-WiFi adapter",
           "port": "Modbus TCP port (usually 502)",
+          "modbus_unit": "Device ID on the Modbus network (usually 1)",
+          "scan_interval": "How often to poll for updates (60-300 recommended)"
+        }
+      },
+      "serial_connection": {
+        "title": "Serial Connection",
+        "description": "Select the serial port connected to your heat pump's RS485 bus",
+        "data": {
+          "serial_port": "Serial Port",
+          "baudrate": "Baud Rate",
+          "parity": "Parity",
+          "bytesize": "Data Bits",
+          "stopbits": "Stop Bits",
+          "modbus_unit": "Modbus Unit ID",
+          "scan_interval": "Scan Interval (seconds)"
+        },
+        "data_description": {
+          "serial_port": "USB RS485 adapter or ESPHome serial proxy (e.g. Home Assistant Connect AUX-2)",
+          "baudrate": "Must match the heat pump (usually 9600)",
+          "parity": "Usually None",
+          "bytesize": "Usually 8",
+          "stopbits": "Usually 1",
           "modbus_unit": "Device ID on the Modbus network (usually 1)",
           "scan_interval": "How often to poll for updates (60-300 recommended)"
         }
@@ -153,6 +187,12 @@
           "model_number": "Your water heater model (e.g., 'HP170')"
         }
       }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect. Check the connection settings and that the device is powered and wired correctly."
+    },
+    "abort": {
+      "already_configured": "This device is already configured"
     }
   },
   "options": {
@@ -176,7 +216,12 @@
           "host": "Host",
           "port": "Port",
           "modbus_unit": "Modbus Unit ID",
-          "scan_interval": "Scan Interval (seconds)"
+          "scan_interval": "Scan Interval (seconds)",
+          "serial_port": "Serial Port",
+          "baudrate": "Baud Rate",
+          "parity": "Parity",
+          "bytesize": "Data Bits",
+          "stopbits": "Stop Bits"
         }
       },
       "control_registers": {

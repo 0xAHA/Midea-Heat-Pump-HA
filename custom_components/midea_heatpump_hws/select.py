@@ -7,7 +7,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, CONF_MODBUS_UNIT
+from .const import DOMAIN, CONF_MODBUS_UNIT, connection_id, connection_label
 from .coordinator import MideaModbusCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ async def async_setup_entry(
     config = hass.data[DOMAIN][config_entry.entry_id]["config"]
     
     # Include host in entity name to make it unique
-    host_suffix = f" ({config['host']})"
+    host_suffix = f" ({connection_label(config)})"
     
     entities = [MideaModeSelect(coordinator, config, host_suffix)]
     async_add_entities(entities)
@@ -44,7 +44,7 @@ class MideaModeSelect(CoordinatorEntity, SelectEntity):
         
         # Entity attributes - include host for uniqueness
         self._attr_name = f"Operation Mode{host_suffix}"
-        self._attr_unique_id = f"midea_{config['host']}_{config[CONF_MODBUS_UNIT]}_mode_select"
+        self._attr_unique_id = f"midea_{connection_id(config)}_{config[CONF_MODBUS_UNIT]}_mode_select"
         self._attr_icon = "mdi:cog"
         self._attr_options = ["eco", "performance", "electric"]
 
@@ -52,8 +52,8 @@ class MideaModeSelect(CoordinatorEntity, SelectEntity):
     def device_info(self):
         """Return device info to link this selector to the main device."""
         return {
-            "identifiers": {(DOMAIN, f"{self._config['host']}_{self._config[CONF_MODBUS_UNIT]}")},
-            "name": f"Midea Heat Pump ({self._config['host']})",
+            "identifiers": {(DOMAIN, f"{connection_id(self._config)}_{self._config[CONF_MODBUS_UNIT]}")},
+            "name": f"Midea Heat Pump ({connection_label(self._config)})",
             "manufacturer": "Midea",
             "model": "Heat Pump Water Heater",
         }

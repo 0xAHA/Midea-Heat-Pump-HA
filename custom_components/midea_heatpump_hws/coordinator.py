@@ -38,7 +38,10 @@ from .const import (
     CONF_HEATER_ASSIST_REGISTER,
     CONF_SANITIZE_STATE_REGISTER,
     CONF_HEATER_ASSIST_TRIGGER_REGISTER,
+    is_serial,
+    connection_label,
 )
+from .serial_transport import async_acquire_serial_client, async_release_serial_client
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -59,8 +62,9 @@ class MideaModbusCoordinator(DataUpdateCoordinator):
             update_interval=timedelta(seconds=config.get(CONF_SCAN_INTERVAL, 60)),
         )
         self.config = config
-        self.host = config["host"]
-        self.port = config["port"]
+        self.is_serial = is_serial(config)
+        self.host = config.get("host")
+        self.port = config.get("port")
         self.modbus_unit = config.get(CONF_MODBUS_UNIT, 1)
 
         # Store register addresses
@@ -109,7 +113,9 @@ class MideaModbusCoordinator(DataUpdateCoordinator):
         self.sanitize_state_register = config.get(CONF_SANITIZE_STATE_REGISTER)
         self.heater_assist_trigger_register = config.get(CONF_HEATER_ASSIST_TRIGGER_REGISTER)
 
-        self._client: AsyncModbusTcpClient | None = None
+        # AsyncModbusTcpClient for TCP, or a SerialModbusClient (same call surface)
+        # on a shared serial link for USB RS485 / ESPHome serial proxies
+        self._client: Any = None
         self._lock = asyncio.Lock()
         self._pending_writes: dict[str, Any] = {}
 
@@ -293,6 +299,10 @@ class MideaModbusCoordinator(DataUpdateCoordinator):
 
     async def _connect(self) -> None:
         """Establish modbus connection."""
+        if self.is_serial:
+            await self._connect_serial()
+            return
+
         try:
             if self._client:
                 try:
@@ -315,6 +325,26 @@ class MideaModbusCoordinator(DataUpdateCoordinator):
         except Exception as err:
             _LOGGER.exception("Connection failed: %s", err)
             raise UpdateFailed(f"Connection failed: {err}")
+
+    async def _connect_serial(self) -> None:
+        """Open (or reuse) the shared serial link for this port."""
+        try:
+            if self._client is None:
+                self._client = await async_acquire_serial_client(self.hass, self.config)
+
+            if not await self._client.connect():
+                raise UpdateFailed("Failed to open serial port")
+
+            _LOGGER.info(
+                "Connected to modbus device on %s (device_id=%s)",
+                connection_label(self.config), self.modbus_unit,
+            )
+
+        except UpdateFailed:
+            raise
+        except Exception as err:
+            _LOGGER.error("Serial connection failed: %s", err)
+            raise UpdateFailed(f"Serial connection failed: {err}")
 
     async def _process_pending_writes(self) -> None:
         """Process any pending write operations."""
@@ -553,7 +583,10 @@ class MideaModbusCoordinator(DataUpdateCoordinator):
 
     async def async_shutdown(self) -> None:
         """Shutdown the coordinator and close connections."""
-        if self._client:
+        if self._client and self.is_serial:
+            self._client = None
+            await async_release_serial_client(self.hass, self.config)
+        elif self._client:
             try:
                 self._client.close()
             except Exception:

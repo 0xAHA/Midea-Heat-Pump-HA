@@ -16,7 +16,31 @@ from homeassistant.data_entry_flow import FlowResult
 import homeassistant.helpers.config_validation as cv
 
 from .profile_manager import ProfileManager
-from .const import DOMAIN
+from .serial_transport import async_acquire_serial_client, async_release_serial_client
+from .const import (
+    DOMAIN,
+    CONF_CONNECTION_TYPE,
+    CONNECTION_TYPE_TCP,
+    CONNECTION_TYPE_SERIAL,
+    CONF_SERIAL_PORT,
+    CONF_BAUDRATE,
+    CONF_BYTESIZE,
+    CONF_PARITY,
+    CONF_STOPBITS,
+    DEFAULT_BAUDRATE,
+    DEFAULT_BYTESIZE,
+    DEFAULT_PARITY,
+    DEFAULT_STOPBITS,
+    is_serial,
+    connection_id,
+    connection_label,
+)
+
+try:
+    # HA 2026.5+: lists local USB ports and ESPHome serial proxies (Connect AUX-2)
+    from homeassistant.helpers.selector import SerialPortSelector
+except ImportError:
+    SerialPortSelector = None
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -84,8 +108,44 @@ STEP_SETUP_METHOD_SCHEMA = vol.Schema({
     vol.Required("setup_method", default="manual"): vol.In({
         "profile": "Load from Profile",
         "manual": "Manual Configuration"
-    })
+    }),
+    vol.Required(CONF_CONNECTION_TYPE, default=CONNECTION_TYPE_TCP): vol.In({
+        CONNECTION_TYPE_TCP: "Network (TCP, e.g. EW11-A)",
+        CONNECTION_TYPE_SERIAL: "Serial (USB RS485 or ESPHome serial proxy)",
+    }),
 })
+
+
+def _serial_port_field():
+    """Serial port picker, or free text on HA versions without SerialPortSelector."""
+    return SerialPortSelector() if SerialPortSelector is not None else str
+
+
+def serial_fields(defaults: dict[str, Any]) -> dict:
+    """Serial port and line settings, prefilled from defaults."""
+    port_default = defaults.get(CONF_SERIAL_PORT)
+    port_key = (
+        vol.Required(CONF_SERIAL_PORT, default=port_default)
+        if port_default else vol.Required(CONF_SERIAL_PORT)
+    )
+    return {
+        port_key: _serial_port_field(),
+        vol.Required(CONF_BAUDRATE, default=defaults.get(CONF_BAUDRATE, DEFAULT_BAUDRATE)): vol.Coerce(int),
+        vol.Required(CONF_PARITY, default=defaults.get(CONF_PARITY, DEFAULT_PARITY)): vol.In({
+            "N": "None", "E": "Even", "O": "Odd"
+        }),
+        vol.Required(CONF_BYTESIZE, default=defaults.get(CONF_BYTESIZE, DEFAULT_BYTESIZE)): vol.In([7, 8]),
+        vol.Required(CONF_STOPBITS, default=defaults.get(CONF_STOPBITS, DEFAULT_STOPBITS)): vol.In([1, 2]),
+    }
+
+
+def serial_connection_schema(defaults: dict[str, Any]) -> vol.Schema:
+    """Schema for the serial connection step."""
+    return vol.Schema({
+        **serial_fields(defaults),
+        vol.Required("modbus_unit", default=defaults.get("modbus_unit", 1)): int,
+        vol.Required("scan_interval", default=defaults.get("scan_interval", 60)): int,
+    })
 
 STEP_PROFILE_SELECT_SCHEMA = lambda profiles: vol.Schema({
     vol.Required("profile"): vol.In(profiles),
@@ -106,7 +166,10 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
     # Skip validation if requested
     if data.get("skip_validation", False):
         _LOGGER.info("Skipping connection validation as requested")
-        return {"title": f"Midea Heat Pump ({data[CONF_HOST]})"}
+        return {"title": f"Midea Heat Pump ({connection_label(data)})"}
+
+    if is_serial(data):
+        return await validate_serial_connection(hass, data)
     
     client = None
     max_retries = 3
@@ -172,6 +235,31 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
     raise Exception("Connection validation failed")
 
 
+async def validate_serial_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
+    """Validate a serial connection via the shared link (the port may already be in use by another entry)."""
+    client = await async_acquire_serial_client(hass, data)
+    try:
+        last_error: Exception | None = None
+        for attempt in range(3):
+            try:
+                await client.connect()
+                result = await client.read_holding_registers(
+                    address=data.get("mode_register", 1),
+                    count=1,
+                    device_id=data.get("modbus_unit", 1)
+                )
+                if not result.isError():
+                    return {"title": f"Midea Heat Pump ({connection_label(data)})"}
+                last_error = Exception(str(result))
+            except Exception as ex:
+                last_error = ex
+            _LOGGER.warning("Serial validation attempt %d failed: %s", attempt + 1, last_error)
+            await asyncio.sleep(1)
+        raise Exception(f"Serial connection failed after 3 attempts: {last_error}")
+    finally:
+        await async_release_serial_client(hass, data)
+
+
 class MideaHeatPumpConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Midea Heat Pump Water Heater."""
 
@@ -204,6 +292,7 @@ class MideaHeatPumpConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
         
         self.profile_manager = ProfileManager(self.hass)
+        self.data[CONF_CONNECTION_TYPE] = user_input.get(CONF_CONNECTION_TYPE, CONNECTION_TYPE_TCP)
     
         if user_input["setup_method"] == "profile":
             return await self.async_step_load_profile()
@@ -228,11 +317,16 @@ class MideaHeatPumpConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 display_name = f"{profile_info['name']} ({profile_info['model']}) - {profile_info['type']}"
                 profile_options[profile_id] = display_name
             
+            if is_serial(self.data):
+                connection_fields = serial_fields({})
+            else:
+                connection_fields = {vol.Required(CONF_HOST): str}
+
             return self.async_show_form(
                 step_id="load_profile",
                 data_schema=vol.Schema({
                     vol.Required("profile"): vol.In(profile_options),
-                    vol.Required(CONF_HOST): str,
+                    **connection_fields,
                     vol.Optional(CONF_NAME, default="Hot Water System"): str,
                 }),
                 description_placeholders={
@@ -245,8 +339,16 @@ class MideaHeatPumpConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         profile_data = self.profile_manager.load_profile(user_input["profile"])
         if profile_data:
             # Apply profile to configuration
+            connection_type = self.data.get(CONF_CONNECTION_TYPE, CONNECTION_TYPE_TCP)
             self.data = self.profile_manager.apply_profile_to_config(profile_data, user_input)
-            self.data[CONF_HOST] = user_input[CONF_HOST]
+            self.data[CONF_CONNECTION_TYPE] = connection_type
+            if connection_type == CONNECTION_TYPE_SERIAL:
+                self.data.pop(CONF_HOST, None)
+                self.data.pop(CONF_PORT, None)
+                for key in (CONF_SERIAL_PORT, CONF_BAUDRATE, CONF_PARITY, CONF_BYTESIZE, CONF_STOPBITS):
+                    self.data[key] = user_input[key]
+            else:
+                self.data[CONF_HOST] = user_input[CONF_HOST]
             self.data[CONF_NAME] = user_input.get(CONF_NAME, profile_data.get("name", "Hot Water System"))
             
             # Skip to validation
@@ -255,7 +357,7 @@ class MideaHeatPumpConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self.data["title"] = info["title"]
                 
                 # Check if already configured
-                await self.async_set_unique_id(f"{self.data[CONF_HOST]}_{self.data['modbus_unit']}")
+                await self.async_set_unique_id(f"{connection_id(self.data)}_{self.data['modbus_unit']}")
                 self._abort_if_unique_id_configured()
                 
                 return self.async_create_entry(
@@ -274,6 +376,9 @@ class MideaHeatPumpConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle connection settings - now Step 1 of manual setup."""
+        if is_serial(self.data):
+            return await self.async_step_serial_connection()
+
         if user_input is None:
             return self.async_show_form(
                 step_id="connection",
@@ -305,6 +410,32 @@ class MideaHeatPumpConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             description_placeholders={
                 "title": "Modbus Connection Settings",
                 "description": "Configure the TCP connection to your EW11-A adapter"
+            },
+        )
+
+    async def async_step_serial_connection(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle serial connection settings (USB RS485 / ESPHome serial proxy)."""
+        errors = {}
+
+        if user_input is not None:
+            try:
+                info = await validate_connection(self.hass, {**self.data, **user_input})
+                self.data.update(user_input)
+                self.data["title"] = info["title"]
+                return await self.async_step_registers()
+            except Exception as ex:
+                _LOGGER.exception("Serial connection failed: %s", ex)
+                errors["base"] = "cannot_connect"
+
+        return self.async_show_form(
+            step_id="serial_connection",
+            data_schema=serial_connection_schema(user_input or {}),
+            errors=errors,
+            description_placeholders={
+                "title": "Serial Connection Settings",
+                "description": "Select a USB RS485 adapter or ESPHome serial proxy"
             },
         )
 
@@ -421,7 +552,7 @@ class MideaHeatPumpConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
         
         # Check if already configured
-        await self.async_set_unique_id(f"{self.data[CONF_HOST]}_{self.data['modbus_unit']}")
+        await self.async_set_unique_id(f"{connection_id(self.data)}_{self.data['modbus_unit']}")
         self._abort_if_unique_id_configured()
         
         return self.async_create_entry(
@@ -492,6 +623,22 @@ class MideaHeatPumpOptionsFlow(config_entries.OptionsFlow):
             return await self._update_and_reload()
 
         current_data = self.config_entry.data
+        if is_serial(current_data):
+            return self.async_show_form(
+                step_id="connection",
+                data_schema=vol.Schema({
+                    **serial_fields(current_data),
+                    vol.Required("modbus_unit", default=current_data.get("modbus_unit", 1)): int,
+                    vol.Required("scan_interval", default=current_data.get("scan_interval", 60)): vol.All(
+                        int, vol.Range(min=30, max=300)
+                    ),
+                }),
+                description_placeholders={
+                    "title": "Update Connection Settings",
+                    "description": "Modify serial Modbus connection parameters"
+                },
+            )
+
         return self.async_show_form(
             step_id="connection",
             data_schema=vol.Schema({
