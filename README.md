@@ -3,7 +3,7 @@
 *Transform your Midea/OEM heat pump hot water system into a smart, Home Assistant-controlled water heater entity!*
 
 ![HACS Badge](https://img.shields.io/badge/HACS-Custom-orange.svg)
-![Version](https://img.shields.io/badge/Version-0.2.5-blue.svg)
+![Version](https://img.shields.io/badge/Version-0.3.0b1-orange.svg)
 [![GitHub Issues](https://img.shields.io/github/issues/0xAHA/Midea-Heat-Pump-HA.svg)](https://github.com/0xAHA/Midea-Heat-Pump-HA/issues)
 
 Help keep this integration alive! Your support is much appreciated :)

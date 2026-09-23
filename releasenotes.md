@@ -1,5 +1,34 @@
 # Release Notes
 
+## Version 0.3.0b1 (pre-release) - Serial / ESPHome Serial Proxy Support
+
+> **Pre-release**: pending live testing on a Home Assistant Connect AUX-2 (ESPHome serial proxy). Existing TCP (EW11-A) setups are unaffected. Please report any issues.
+
+### ✨ New Features
+
+#### Serial Connection Type
+
+Alongside the existing network (TCP) connection, you can now pick **Serial** when adding the integration:
+
+- **USB RS485 adapters** plugged into Home Assistant
+- **ESPHome serial proxies**, e.g. the Home Assistant Connect AUX-2 (`esphome-hass://...` ports)
+- On Home Assistant 2026.5+ the port picker lists local USB ports and ESPHome proxies side by side; older versions accept a typed device path
+- Line settings are configurable (default 9600 baud, 8 data bits, no parity, 1 stop bit)
+- Several heat pumps on the same RS485 bus can share one serial port. Give each a different Modbus Unit ID and the integration shares a single connection between them
+- Works with profiles and the options flow
+
+Serial connections use Home Assistant's `modbus-connection` library (tmodbus backend). The TCP path still uses pymodbus and is unchanged.
+
+### 🔧 Improvements
+
+- `iot_class` corrected to `local_polling`
+- Added missing "cannot connect" / "already configured" messages to the config flow
+
+### ⚠️ Notes
+
+- New dependency: `modbus-connection[tmodbus]>=4.12.1`, which Home Assistant installs automatically
+- Existing entities and unique IDs are unchanged
+
 ## Version 0.2.6 (pre-release) - Manual E-Heater Assist Switch
 
 > **Pre-release**: pending further live end-to-end validation on EcoSpring HP300 hardware. Please report any issues.
