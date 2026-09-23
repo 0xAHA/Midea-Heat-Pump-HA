@@ -8,7 +8,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, CONF_MODBUS_UNIT, CONF_HEATER_ASSIST_TRIGGER_REGISTER
+from .const import DOMAIN, CONF_MODBUS_UNIT, CONF_HEATER_ASSIST_TRIGGER_REGISTER, connection_id, connection_label
 from .coordinator import MideaModbusCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ async def async_setup_entry(
     config = hass.data[DOMAIN][config_entry.entry_id]["config"]
 
     # Include host in entity name to make it unique
-    host_suffix = f" ({config['host']})"
+    host_suffix = f" ({connection_label(config)})"
 
     # Create switches
     entities = [MideaPowerSwitch(coordinator, config, host_suffix)]
@@ -59,15 +59,15 @@ class MideaPowerSwitch(CoordinatorEntity, SwitchEntity):
         
         # Entity attributes - include host for uniqueness
         self._attr_name = f"Power{host_suffix}"
-        self._attr_unique_id = f"midea_{config['host']}_{config[CONF_MODBUS_UNIT]}_power"
+        self._attr_unique_id = f"midea_{connection_id(config)}_{config[CONF_MODBUS_UNIT]}_power"
         self._attr_icon = "mdi:power"
 
     @property
     def device_info(self):
         """Return device info to link this switch to the main device."""
         return {
-            "identifiers": {(DOMAIN, f"{self._config['host']}_{self._config[CONF_MODBUS_UNIT]}")},
-            "name": f"Midea Heat Pump ({self._config['host']})",
+            "identifiers": {(DOMAIN, f"{connection_id(self._config)}_{self._config[CONF_MODBUS_UNIT]}")},
+            "name": f"Midea Heat Pump ({connection_label(self._config)})",
             "manufacturer": "Midea",
             "model": "Heat Pump Water Heater",
         }
@@ -113,15 +113,15 @@ class MideaSterilizeSwitch(CoordinatorEntity, SwitchEntity):
 
         # Entity attributes - include host for uniqueness
         self._attr_name = f"Sanitize Mode{host_suffix}"
-        self._attr_unique_id = f"midea_{config['host']}_{config[CONF_MODBUS_UNIT]}_sterilize"
+        self._attr_unique_id = f"midea_{connection_id(config)}_{config[CONF_MODBUS_UNIT]}_sterilize"
         self._attr_icon = "mdi:water-boiler"
 
     @property
     def device_info(self):
         """Return device info to link this switch to the main device."""
         return {
-            "identifiers": {(DOMAIN, f"{self._config['host']}_{self._config[CONF_MODBUS_UNIT]}")},
-            "name": f"Midea Heat Pump ({self._config['host']})",
+            "identifiers": {(DOMAIN, f"{connection_id(self._config)}_{self._config[CONF_MODBUS_UNIT]}")},
+            "name": f"Midea Heat Pump ({connection_label(self._config)})",
             "manufacturer": "Midea",
             "model": "Heat Pump Water Heater",
         }
@@ -167,15 +167,15 @@ class MideaHeaterAssistSwitch(CoordinatorEntity, SwitchEntity):
 
         # Entity attributes - include host for uniqueness
         self._attr_name = f"Manual Heater Assist{host_suffix}"
-        self._attr_unique_id = f"midea_{config['host']}_{config[CONF_MODBUS_UNIT]}_heater_assist_trigger"
+        self._attr_unique_id = f"midea_{connection_id(config)}_{config[CONF_MODBUS_UNIT]}_heater_assist_trigger"
         self._attr_icon = "mdi:fire"
 
     @property
     def device_info(self):
         """Return device info to link this switch to the main device."""
         return {
-            "identifiers": {(DOMAIN, f"{self._config['host']}_{self._config[CONF_MODBUS_UNIT]}")},
-            "name": f"Midea Heat Pump ({self._config['host']})",
+            "identifiers": {(DOMAIN, f"{connection_id(self._config)}_{self._config[CONF_MODBUS_UNIT]}")},
+            "name": f"Midea Heat Pump ({connection_label(self._config)})",
             "manufacturer": "Midea",
             "model": "Heat Pump Water Heater",
         }

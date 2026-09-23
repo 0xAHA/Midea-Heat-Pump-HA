@@ -14,6 +14,8 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
+    connection_id,
+    connection_label,
     DOMAIN,
     CONF_MODBUS_UNIT,
     CONF_TEMP_REGISTER,
@@ -43,7 +45,7 @@ async def async_setup_entry(
     entities = []
 
     # Include host in entity names to make them unique
-    host_suffix = f" ({config['host']})"
+    host_suffix = f" ({connection_label(config)})"
 
     # Main temperature sensor
     entities.append(
@@ -117,7 +119,7 @@ class MideaTemperatureSensor(CoordinatorEntity, SensorEntity):
 
         # Entity attributes - name already includes host for uniqueness
         self._attr_name = name
-        self._attr_unique_id = f"midea_{config['host']}_{config[CONF_MODBUS_UNIT]}_{sensor_id}"
+        self._attr_unique_id = f"midea_{connection_id(config)}_{config[CONF_MODBUS_UNIT]}_{sensor_id}"
         self._attr_device_class = SensorDeviceClass.TEMPERATURE
         self._attr_state_class = SensorStateClass.MEASUREMENT
         self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
@@ -126,8 +128,8 @@ class MideaTemperatureSensor(CoordinatorEntity, SensorEntity):
     def device_info(self):
         """Return device info to link this sensor to the main device."""
         return {
-            "identifiers": {(DOMAIN, f"{self._config['host']}_{self._config[CONF_MODBUS_UNIT]}")},
-            "name": f"Midea Heat Pump ({self._config['host']})",
+            "identifiers": {(DOMAIN, f"{connection_id(self._config)}_{self._config[CONF_MODBUS_UNIT]}")},
+            "name": f"Midea Heat Pump ({connection_label(self._config)})",
             "manufacturer": "Midea",
             "model": "Heat Pump Water Heater",
         }

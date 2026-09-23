@@ -54,7 +54,7 @@ This integration is primarily developed for the **Chromagen Midea 170L Heat Pump
 - **Other OEM-branded Midea units** (many manufacturers rebrand Midea heat pumps)
 - **Similar Modbus-controllable hot water systems**
 - **Different capacity Midea models** (200L, 300L, etc.)
-- **Other heat pump water heaters** with Modbus RTU over TCP support
+- **Other heat pump water heaters** with Modbus RTU support (over TCP, USB RS485 or an ESPHome serial proxy)
 
 The integration's flexible configuration and profile system allows you to:
 - Load pre-configured profiles for known models
@@ -103,13 +103,14 @@ The integration now includes a profile system for quick and easy configuration:
    - Settings → Devices & Services → Add Integration
    - Search for "Midea Heatpump HWS"
 
-2. **Choose Setup Method**:
+2. **Choose Setup Method and Connection Type**:
    - Select **"Load from Profile"** for quick setup
    - Select **"Manual Configuration"** for custom setup
+   - Connection type: **Network (TCP)** for an RS485-WiFi adapter such as the EW11-A, or **Serial** for a USB RS485 adapter or an ESPHome serial proxy (e.g. Home Assistant Connect AUX-2)
 
 3. **If using Profile**:
    - Choose from available profiles (e.g., "Midea 170L Heat Pump")
-   - Enter your device's IP address
+   - Enter your device's IP address (TCP) or pick the serial port (Serial)
    - Enter a friendly name
    - Done! All registers and settings are pre-configured
 
@@ -122,6 +123,8 @@ If choosing manual setup or your model isn't in the profiles:
    - **Port**: Modbus TCP port (usually 502)
    - **Modbus Unit**: Device ID (usually 1)
    - **Scan Interval**: How often to poll (60-300 seconds)
+
+   For a **Serial** connection, instead choose the **Serial Port** (Home Assistant 2026.5+ lists local USB ports and ESPHome serial proxies; older versions accept a device path such as `/dev/serial/by-id/...`) and the line settings (usually 9600 baud, 8 data bits, no parity, 1 stop bit). Multiple heat pumps on the same RS485 bus can share one serial port by giving each a different Modbus Unit ID.
 
 2. **Step 2: Control Registers**
    - Power Register (default: 0)

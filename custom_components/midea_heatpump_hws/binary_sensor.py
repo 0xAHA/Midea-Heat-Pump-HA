@@ -12,6 +12,8 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
+    connection_id,
+    connection_label,
     DOMAIN,
     CONF_MODBUS_UNIT,
     CONF_HEATER_ASSIST_REGISTER,
@@ -35,7 +37,7 @@ async def async_setup_entry(
     coordinator = hass.data[DOMAIN][config_entry.entry_id]["coordinator"]
     config = hass.data[DOMAIN][config_entry.entry_id]["config"]
 
-    host_suffix = f" ({config['host']})"
+    host_suffix = f" ({connection_label(config)})"
     entities = []
 
     if config.get(CONF_HEATER_ASSIST_REGISTER) is not None:
@@ -105,15 +107,15 @@ class MideaBinarySensor(CoordinatorEntity, BinarySensorEntity):
 
         self._attr_name = name
         suffix = unique_id_suffix or data_key
-        self._attr_unique_id = f"midea_{config['host']}_{config[CONF_MODBUS_UNIT]}_{suffix}"
+        self._attr_unique_id = f"midea_{connection_id(config)}_{config[CONF_MODBUS_UNIT]}_{suffix}"
         self._attr_device_class = device_class
 
     @property
     def device_info(self) -> dict[str, Any]:
         """Return device info to group this sensor with the main device."""
         return {
-            "identifiers": {(DOMAIN, f"{self._config['host']}_{self._config[CONF_MODBUS_UNIT]}")},
-            "name": f"Midea Heat Pump ({self._config['host']})",
+            "identifiers": {(DOMAIN, f"{connection_id(self._config)}_{self._config[CONF_MODBUS_UNIT]}")},
+            "name": f"Midea Heat Pump ({connection_label(self._config)})",
             "manufacturer": "Midea",
             "model": "Heat Pump Water Heater",
         }

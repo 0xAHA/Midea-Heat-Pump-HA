@@ -1,4 +1,6 @@
 """Constants for the Midea Heat Pump Water Heater integration."""
+from urllib.parse import parse_qs, urlparse
+
 from homeassistant.const import Platform
 
 DOMAIN = "midea_heatpump_hws"
@@ -75,3 +77,44 @@ CONF_ENABLE_ADDITIONAL_SENSORS = "enable_additional_sensors"
 CONF_HEATER_ASSIST_REGISTER = "heater_assist_register"
 CONF_SANITIZE_STATE_REGISTER = "sanitize_state_register"
 CONF_HEATER_ASSIST_TRIGGER_REGISTER = "heater_assist_trigger_register"
+
+# Connection type
+CONF_CONNECTION_TYPE = "connection_type"
+CONNECTION_TYPE_TCP = "tcp"
+CONNECTION_TYPE_SERIAL = "serial"
+
+# Serial connection settings (USB RS485, ESPHome serial proxy, Connect AUX-2)
+CONF_SERIAL_PORT = "serial_port"
+CONF_BAUDRATE = "baudrate"
+CONF_BYTESIZE = "bytesize"
+CONF_PARITY = "parity"
+CONF_STOPBITS = "stopbits"
+
+DEFAULT_BAUDRATE = 9600
+DEFAULT_BYTESIZE = 8
+DEFAULT_PARITY = "N"
+DEFAULT_STOPBITS = 1
+
+
+def is_serial(config) -> bool:
+    """Return True if the config entry uses a serial connection."""
+    return config.get(CONF_CONNECTION_TYPE, CONNECTION_TYPE_TCP) == CONNECTION_TYPE_SERIAL
+
+
+def connection_id(config) -> str:
+    """Return the stable identifier used in unique IDs (host for TCP entries)."""
+    if is_serial(config):
+        return config[CONF_SERIAL_PORT]
+    return config["host"]
+
+
+def connection_label(config) -> str:
+    """Return a short human-readable label for the connection."""
+    if not is_serial(config):
+        return config["host"]
+    port = config[CONF_SERIAL_PORT]
+    if port.startswith("esphome"):
+        # esphome-hass://esphome/<entry_id>?port_name=USB+Serial+Port
+        port_name = parse_qs(urlparse(port).query).get("port_name", ["Serial"])[0]
+        return f"ESPHome {port_name}"
+    return port.rsplit("/", 1)[-1]

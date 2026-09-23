@@ -17,6 +17,8 @@ from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
+    connection_id,
+    connection_label,
     DOMAIN,
     CONF_MODBUS_UNIT,
     CONF_TARGET_TEMP,
@@ -65,13 +67,13 @@ class MideaWaterHeater(CoordinatorEntity, WaterHeaterEntity, RestoreEntity):
         
         # Entity attributes - include host in name to make it unique across multiple instances
         base_name = config.get(CONF_NAME, "Midea Heat Pump")
-        host = config.get('host', 'unknown')
+        host = connection_label(config)
         
         # Create unique entity name by including host
         self._attr_name = f"{base_name} ({host})"
         
         # Unique ID ensures registry uniqueness
-        self._attr_unique_id = f"midea_{host}_{config[CONF_MODBUS_UNIT]}"
+        self._attr_unique_id = f"midea_{connection_id(config)}_{config[CONF_MODBUS_UNIT]}"
         
         self._attr_supported_features = (
             WaterHeaterEntityFeature.TARGET_TEMPERATURE |
@@ -114,8 +116,8 @@ class MideaWaterHeater(CoordinatorEntity, WaterHeaterEntity, RestoreEntity):
     def device_info(self):
         """Return device info to link this water heater to the main device."""
         return {
-            "identifiers": {(DOMAIN, f"{self._config['host']}_{self._config[CONF_MODBUS_UNIT]}")},
-            "name": f"Midea Heat Pump ({self._config['host']})",
+            "identifiers": {(DOMAIN, f"{connection_id(self._config)}_{self._config[CONF_MODBUS_UNIT]}")},
+            "name": f"Midea Heat Pump ({connection_label(self._config)})",
             "manufacturer": "Midea",
             "model": "Heat Pump Water Heater",
         }
